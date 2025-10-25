@@ -3,14 +3,8 @@ import { Link } from 'react-router-dom';
 import Button from '../components/Button';
 import LoginModal from '../components/LoginModal';
 
-const BlockIcon: React.FC<{className?: string}> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-8 w-8 text-brand-blue"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 0v10l8 4m0-14L4 7" />
-  </svg>
-);
-
 const LandingPage: React.FC = () => {
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalModalOpen] = useState(false);
 
   return (
     <>
@@ -26,7 +20,7 @@ const LandingPage: React.FC = () => {
         <div className="relative z-10 text-center">
           <div className="bg-black/20 backdrop-blur-lg border border-white/10 rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl mx-auto">
               <div className="animate-fade-in mx-auto mb-6">
-                  <BlockIcon className="h-20 w-20 text-brand-blue mx-auto" />
+                  <img src="https://i.postimg.cc/RVSP1wh3/Crowd-logo.png" alt="CrowdChain Logo" className="h-20 w-20 mx-auto" />
               </div>
               <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight animate-text-focus-in" style={{ animationDelay: '0.5s' }}>
                   CrowdChain

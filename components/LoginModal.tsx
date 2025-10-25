@@ -46,17 +46,12 @@ const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
 
     useEffect(() => {
         if (step === 2 && !isVerifying && !isVerified) {
-            setIsVerifying(true);
-            const verificationTimer = setTimeout(() => {
-                setIsVerifying(false);
-                setIsVerified(true);
-                const nextStepTimer = setTimeout(() => {
-                    setStep(3);
-                }, 2000);
-                return () => clearTimeout(nextStepTimer);
-            }, 5000);
-
-            return () => clearTimeout(verificationTimer);
+            setIsVerifying(false);
+            setIsVerified(true);
+            const nextStepTimer = setTimeout(() => {
+                setStep(3);
+            }, 100); // Very short delay to transition
+            return () => clearTimeout(nextStepTimer);
         }
     }, [step, isVerifying, isVerified]);
 
@@ -64,8 +59,8 @@ const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
         login();
     };
 
-    const handleFinish = () => {
-        setUserAsCreator();
+    const handleFinish = async () => {
+        await setUserAsCreator();
         onClose();
         navigate('/dashboard');
     };
@@ -103,9 +98,8 @@ const LoginModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                          <h3 className="text-xl font-bold">You're All Set!</h3>
                          <p className="mt-2 text-brand-muted">Follow our socials to stay up to date with the community and platform news.</p>
                          <div className="mt-6 flex justify-center space-x-4">
-                            <SocialIcon href="https://twitter.com"><TwitterIcon /></SocialIcon>
-                            <SocialIcon href="https://discord.com"><DiscordIcon /></SocialIcon>
-                            <SocialIcon href="https://telegram.org"><TelegramIcon /></SocialIcon>
+                            <SocialIcon href="https://x.com/crowdchainDapp"><TwitterIcon /></SocialIcon>
+                            <SocialIcon href="https://t.me/+Rkph17__oXw2OGU0"><TelegramIcon /></SocialIcon>
                             <SocialIcon href="https://github.com"><GithubIcon /></SocialIcon>
                          </div>
                          <Button onClick={handleFinish} variant="primary" className="mt-8 w-full">Go to Dashboard</Button>

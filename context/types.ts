@@ -13,6 +13,7 @@ export interface Milestone {
   fundsRequired: number;
   status: 'Pending' | 'In Review' | 'Complete';
   proof?: string;
+  yesVotes?: number;
 }
 
 export interface Project {

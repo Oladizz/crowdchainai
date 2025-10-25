@@ -1,0 +1,25 @@
+{
+  "name": "smart-contract",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.6",
+    "@nomicfoundation/hardhat-verify": "^2.1.1",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@typechain/hardhat": "^9.1.0",
+    "hardhat": "^2.26.3",
+    "hardhat-gas-reporter": "^2.1.1",
+    "solidity-coverage": "^0.8.16",
+    "ts-node": "^10.9.2"
+  }
+}

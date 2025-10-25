@@ -4,12 +4,6 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
-const BlockIcon: React.FC<{className?: string}> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-8 w-8 text-brand-blue"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 0v10l8 4m0-14L4 7" />
-  </svg>
-);
-
 const HomeIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -66,7 +60,7 @@ const Sidebar: React.FC = () => {
     return (
         <aside className="fixed top-0 left-0 z-40 w-64 h-screen bg-brand-surface/60 backdrop-blur-lg border-r border-white/10 hidden md:flex flex-col p-4">
             <div className="flex items-center space-x-2 mb-8 px-2">
-                <BlockIcon />
+                <img src="https://i.postimg.cc/RVSP1wh3/Crowd-logo.png" alt="CrowdChain Logo" className="h-8 w-8 text-brand-blue" />
                 <span className="text-xl font-bold text-white tracking-wider">CrowdChain</span>
             </div>
             <nav className="flex-1 flex flex-col space-y-2">
