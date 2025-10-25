@@ -287,6 +287,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         logout();
       } else if (user && accounts[0].toLowerCase() !== user.walletAddress.toLowerCase()) {
         await connectWallet();
+      } else if (!user && accounts.length > 0) {
+        await connectWallet();
       }
     };
 
@@ -302,7 +304,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         (window as any).ethereum?.removeListener('chainChanged', handleChainChanged);
       };
     }
-  }, [user]);
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'dark' ? 'light' : 'dark'));
