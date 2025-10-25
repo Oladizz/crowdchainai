@@ -1,0 +1,62 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import Button from '../components/Button';
+import LoginModal from '../components/LoginModal';
+
+const BlockIcon: React.FC<{className?: string}> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-8 w-8 text-brand-blue"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-14L4 7m0 0v10l8 4m0-14L4 7" />
+  </svg>
+);
+
+const LandingPage: React.FC = () => {
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  return (
+    <>
+      <div className="relative w-full h-screen flex items-center justify-center overflow-hidden bg-brand-bg text-white p-4">
+        {/* Background Animation */}
+        <div 
+          className="absolute inset-0 bg-gradient-to-br from-brand-bg via-brand-surface to-black animate-gradient-xy" 
+          style={{ backgroundSize: '200% 200%' }} 
+        />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_farthest-side_at_50%_50%,rgba(0,191,255,0.25),transparent)]"></div>
+
+        {/* Content */}
+        <div className="relative z-10 text-center">
+          <div className="bg-black/20 backdrop-blur-lg border border-white/10 rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl mx-auto">
+              <div className="animate-fade-in mx-auto mb-6">
+                  <BlockIcon className="h-20 w-20 text-brand-blue mx-auto" />
+              </div>
+              <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight animate-text-focus-in" style={{ animationDelay: '0.5s' }}>
+                  CrowdChain
+              </h1>
+              <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-brand-muted animate-fade-in" style={{ animationDelay: '1s' }}>
+                  The Future of Funding, Built by Community.
+              </p>
+              <div className="mt-10 animate-slide-in-bottom flex flex-col sm:flex-row justify-center items-center gap-4" style={{ animationDelay: '1.5s' }}>
+                  <Button 
+                      onClick={() => setIsLoginModalOpen(true)}
+                      variant="primary" 
+                      className="text-base px-8 py-3 rounded-full shadow-lg shadow-brand-blue/30 transition-all duration-300 hover:shadow-2xl hover:shadow-brand-blue/50 hover:scale-105"
+                  >
+                      Join as a Creator
+                  </Button>
+                  <Link to="/home">
+                      <Button 
+                          variant="secondary" 
+                          className="text-base px-8 py-3 rounded-full"
+                      >
+                          Explore as an Investor
+                      </Button>
+                  </Link>
+              </div>
+          </div>
+        </div>
+      </div>
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+    </>
+  );
+};
+
+export default LandingPage;
