@@ -194,7 +194,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addToast = (message: string, type: Toast['type']) => {
       const id = Date.now();
-      setToasts(prevToasts => [...prevToasts, { id, message, type }]);
+      setToasts(prevToasts => {
+          const recentMessages = prevToasts.slice(-5).map(t => t.message);
+          if (recentMessages.includes(message)) {
+              return prevToasts;
+          }
+          return [...prevToasts, { id, message, type }];
+      });
   };
 
   const removeToast = (id: number) => {
@@ -205,14 +211,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const connectWallet = async () => {
     if (!(window as any).ethereum) {
-      addToast('Please install a web3 wallet!', 'error');
+      addToast('Please install a web3 wallet to continue.', 'info');
       return;
     }
 
     try {
       const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
       if (!accounts || accounts.length === 0) {
-        addToast('No accounts found.', 'error');
+        addToast('No accounts found. Please create an account in your wallet.', 'info');
         return;
       }
       const chainId = await (window as any).ethereum.request({ method: 'eth_chainId' });
@@ -224,9 +230,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           });
         } catch (switchError: any) {
           if (switchError.code === 4902) {
-            addToast('Please add Base Sepolia to your wallet.', 'error');
+            addToast('Please add Base Sepolia to your wallet.', 'info');
           } else {
-            addToast('Failed to switch to Base Sepolia.', 'error');
+            addToast('Could not switch to Base Sepolia. Please do it manually in your wallet.', 'info');
           }
           return;
         }
@@ -269,9 +275,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addToast(isAdmin ? 'Admin wallet connected!' : 'Wallet connected!', 'success');
       getAllUsers();
 
-    } catch (error) {
-      console.error('Failed to connect wallet:', error);
-      addToast('Failed to connect wallet.', 'error');
+    } catch (error: any) {
+        if (error.code === 4001) {
+            addToast('You rejected the connection request. Please connect your wallet to continue.', 'info');
+        } else if (error.code === -32002) {
+            addToast('Connection request already pending. Please check your wallet.', 'info');
+        } else {
+            console.error('Failed to connect wallet:', error);
+            addToast('An unexpected error occurred. Please try again.', 'error');
+        }
     }
   };
   
