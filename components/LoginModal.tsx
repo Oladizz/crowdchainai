@@ -48,7 +48,7 @@ const LoginModal: React.FC = () => {
         }, 5000);
         return () => clearTimeout(verificationTimer);
     }
-  }, [step, isVerifying, isVerified]);
+  }, [step, isVerified]);
 
   const handleConnect = () => {
     login();
