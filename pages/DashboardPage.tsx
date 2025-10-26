@@ -48,7 +48,7 @@ const DashboardPage: React.FC = () => {
     const TabButton: React.FC<{tabName: Tab, label: string}> = ({ tabName, label }) => (
         <button
             onClick={() => setActiveTab(tabName)}
-            className={`px-3 sm:px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap border ${activeTab === tabName ? 'bg-brand-button text-white border-brand-button-hover' : 'text-brand-muted hover:bg-brand-surface hover:text-white border-transparent'}`}
+            className={`px-3 sm:px-4 py-2 text-sm font-medium rounded-full transition-all duration-300 whitespace-nowrap border ${activeTab === tabName ? 'bg-brand-blue/20 text-white border-brand-blue' : 'bg-brand-surface/60 text-brand-muted hover:bg-brand-surface hover:text-white border-transparent'}`}
         >
             {label}
         </button>
@@ -71,13 +71,13 @@ const DashboardPage: React.FC = () => {
             </div>
 
             <div>
-                <div data-guide="dashboard-tabs" className="border-b border-gray-200 dark:border-brand-surface mb-6">
-                    <nav className="-mb-px flex space-x-2 sm:space-x-4 overflow-x-auto" aria-label="Tabs">
+                <div data-guide="dashboard-tabs" className="mb-6">
+                    <div className="grid grid-cols-2 gap-4">
                         <TabButton tabName="investments" label="My Investments" />
                         {isCreator && <TabButton tabName="projects" label="My Projects" />}
                         {isCreator && <TabButton tabName="create" label="Create Project" />}
                         <TabButton tabName="settings" label="Settings" />
-                    </nav>
+                    </div>
                 </div>
                 <div>
                     {renderTabContent()}
