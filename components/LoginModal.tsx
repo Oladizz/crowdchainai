@@ -39,10 +39,10 @@ const LoginModal: React.FC = () => {
             setIsVerifying(false);
             setIsVerified(true);
             const nextStepTimer = setTimeout(() => {
-                setStep(3);
+                handleFinish();
             }, 1000);
             return () => clearTimeout(nextStepTimer);
-        }, 2000);
+        }, 5000);
         return () => clearTimeout(verificationTimer);
     }
   }, [step, isVerifying, isVerified]);
