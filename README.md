@@ -149,11 +149,4 @@ Please include tests for new behavior and keep changes focused and documented.
 
 ---
 
-## License
-
-Specify your license here (e.g., MIT). Add a LICENSE file in the repo if not present.
-
----
-
 Built to bring transparency, accountability, and intelligent screening to community-funded projects.
-```
