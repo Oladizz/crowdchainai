@@ -64,7 +64,7 @@ const Sidebar: React.FC = () => {
                 <span className="text-xl font-bold text-white tracking-wider">CrowdChain</span>
             </div>
             <nav className="flex-1 flex flex-col space-y-2">
-                <NavItem to="/home" label="Home" icon={HomeIcon} />
+
                 <NavItem to="/explore" label="Explore" icon={CompassIcon} />
                 <NavItem to="/dao" label="DAO Governance" icon={DaoIcon} />
                 {user && <NavItem to="/dashboard" label="Dashboard" icon={UserIcon} />}

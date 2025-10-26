@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import Button from './Button';
 import { useAppContext } from '../context/AppContext';
 
@@ -12,7 +12,9 @@ const UserIcon: React.FC<{className?: string}> = ({className}) => (
 );
 
 const Header: React.FC = () => {
-  const { user, login, truncateAddress } = useAppContext();
+  const { user, login, truncateAddress, openGetStartedModal } = useAppContext();
+  const location = useLocation();
+  const isLandingPage = location.pathname === '/';
 
   return (
     <header className="bg-white/60 dark:bg-brand-surface/60 backdrop-blur-lg sticky top-0 z-30 border-b border-gray-200 dark:border-white/10">
@@ -35,8 +37,8 @@ const Header: React.FC = () => {
                  </Link>
                </div>
             ) : (
-              <div data-guide="connect-wallet">
-                <Button onClick={login} variant="secondary">Connect on Base</Button>
+              <div className="flex items-center space-x-4">
+                {isLandingPage && <Button variant="primary" onClick={openGetStartedModal}>Get Started</Button>}
               </div>
             )}
           </div>

@@ -11,16 +11,13 @@ const SocialIcon: React.FC<{ href: string; children: React.ReactNode }> = ({ hre
 
 const Footer: React.FC = () => {
     return (
-        <footer className="bg-gray-100/60 dark:bg-brand-surface/60 backdrop-blur-lg border-t border-gray-200 dark:border-white/10">
-            <div className="container mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <footer className="bg-gray-100/60 dark:bg-brand-surface/60 backdrop-blur-lg border-t border-gray-200 dark:border-white/10 rounded-t-xl">
+            <div className="py-6 px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                     <div className="text-sm text-brand-muted">
                         &copy; {new Date().getFullYear()} CrowdChain. All rights reserved.
                     </div>
                     <nav className="flex space-x-6 text-sm flex-wrap justify-center">
-                        <Link to="/" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Home</Link>
-                        <Link to="/explore" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Explore</Link>
-                        <Link to="/dao" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">DAO</Link>
                         <Link to="/about" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">About</Link>
                         <Link to="/contact" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Contact</Link>
                         <Link to="/waitlist" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Waitlist</Link>

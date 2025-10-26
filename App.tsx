@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
-import HomePage from './pages/HomePage';
+
 import ExplorePage from './pages/ExplorePage';
 import ProjectDetailPage from './pages/ProjectDetailPage';
 import DaoPage from './pages/DaoPage';
@@ -23,6 +22,9 @@ import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
+import AdminRoute from './components/AdminRoute';
+import LoginModal from './components/LoginModal';
+import GetStartedModal from './components/GetStartedModal';
 import AiChatbot from './components/AiChatbot';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -80,7 +82,6 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             
             <Sidebar />
             <div className="flex-1 flex flex-col md:pl-64">
-                <Header />
                 <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-20 md:pb-6">
                     {children}
                 </main>
@@ -106,27 +107,30 @@ const App: React.FC = () => {
     return (
         <AppProvider>
             <HashRouter>
-                <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/*" element={
-                        <MainLayout>
+                            <Header />
                             <Routes>
-                                <Route path="/home" element={<HomePage />} />
-                                <Route path="/explore" element={<ExplorePage />} />
-                                <Route path="/project/:id" element={<ProjectDetailPage />} />
-                                <Route path="/dao" element={<DaoPage />} />
-                                <Route path="/dashboard" element={<DashboardPage />} />
-                                <Route path="/create" element={<CreateProjectPage />} />
-                                <Route path="/about" element={<AboutPage />} />
-                                <Route path="/contact" element={<ContactPage />} />
-                                <Route path="/waitlist" element={<WaitlistPage />} />
-                                <Route path="/admin" element={<AdminPage />} />
-                                {/* <Route path="/ai-tools" element={<AiToolsPage />} /> */}
-                                <Route path="/profile/:walletAddress" element={<ProfilePage />} />
+                                <Route path="/" element={<LandingPage />} />
+                                <Route path="/*" element={
+                                    <MainLayout>
+                                        <Routes>
+                                            <Route path="/home" element={<ExplorePage />} />
+                                            <Route path="/explore" element={<ExplorePage />} />
+                                            <Route path="/project/:id" element={<ProjectDetailPage />} />
+                                            <Route path="/dao" element={<DaoPage />} />
+                                            <Route path="/dashboard" element={<DashboardPage />} />
+                                            <Route path="/create" element={<CreateProjectPage />} />
+                                            <Route path="/about" element={<AboutPage />} />
+                                            <Route path="/contact" element={<ContactPage />} />
+                                            <Route path="/waitlist" element={<WaitlistPage />} />
+                                            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+                                            {/* <Route path="/ai-tools" element={<AiToolsPage />} /> */}
+                                            <Route path="/profile/:walletAddress" element={<ProfilePage />} />
+                                        </Routes>
+                                    </MainLayout>
+                                } />
                             </Routes>
-                        </MainLayout>
-                    } />
-                </Routes>
+            <GetStartedModal />
+            <LoginModal />
             </HashRouter>
         </AppProvider>
     );

@@ -34,6 +34,12 @@ interface AppContextType {
   theme: 'dark' | 'light';
   toasts: Toast[];
   isLoading: boolean;
+  isGetStartedModalOpen: boolean;
+  isLoginModalOpen: boolean;
+  openGetStartedModal: () => void;
+  closeGetStartedModal: () => void;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
   addToast: (message: string, type: Toast['type']) => void;
   removeToast: (id: number) => void;
   login: () => void;
@@ -73,6 +79,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [crowdChainContract, setCrowdChainContract] = useState<ethers.Contract | null>(null);
+  const [isGetStartedModalOpen, setIsGetStartedModalOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const openGetStartedModal = () => {
+    console.log('openGetStartedModal called');
+    setIsGetStartedModalOpen(true);
+  }
+  const closeGetStartedModal = () => setIsGetStartedModalOpen(false);
+  const openLoginModal = () => setIsLoginModalOpen(true);
+  const closeLoginModal = () => setIsLoginModalOpen(false);
 
   useEffect(() => {
     if ((window as any).ethereum) {
@@ -641,7 +657,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   return (
-    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole }}>
+    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, isGetStartedModalOpen, openGetStartedModal, closeGetStartedModal, isLoginModalOpen, openLoginModal, closeLoginModal, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole }}>
       {children}
     </AppContext.Provider>
   );
