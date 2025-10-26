@@ -19,6 +19,7 @@ const LoginModal: React.FC = () => {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
+    console.log('LoginModalOpen effect', isLoginModalOpen);
     if (isLoginModalOpen) {
         setStep(1);
         setIsVerifying(false);
@@ -27,12 +28,14 @@ const LoginModal: React.FC = () => {
   }, [isLoginModalOpen]);
 
   useEffect(() => {
+    console.log('User and step effect', user, step, isLoginModalOpen);
     if (user && step === 1 && isLoginModalOpen) {
         setStep(2);
     }
   }, [user, step, isLoginModalOpen]);
 
   useEffect(() => {
+    console.log('Verification effect', step, isVerifying, isVerified);
     if (step === 2 && !isVerifying && !isVerified) {
         setIsVerifying(true);
         const verificationTimer = setTimeout(() => {
