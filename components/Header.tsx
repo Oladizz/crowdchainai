@@ -20,7 +20,7 @@ const Header: React.FC = () => {
     <header className="bg-white/60 dark:bg-brand-surface/60 backdrop-blur-lg sticky top-0 z-30 border-b border-gray-200 dark:border-white/10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <NavLink to="/" className="flex items-center space-x-2 md:hidden">
+          <NavLink to="/" state={{ fromLogo: true }} className="flex items-center space-x-2 md:hidden">
             <img src="https://i.postimg.cc/RVSP1wh3/Crowd-logo.png" alt="CrowdChain Logo" className="h-7 w-7 sm:h-8 sm:w-8" />
             <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white tracking-wider">CrowdChain</span>
           </NavLink>

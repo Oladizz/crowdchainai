@@ -26,6 +26,7 @@ import AdminRoute from './components/AdminRoute';
 import LoginModal from './components/LoginModal';
 import GetStartedModal from './components/GetStartedModal';
 import AiChatbot from './components/AiChatbot';
+import LandingRedirect from './components/LandingRedirect';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
@@ -109,7 +110,7 @@ const App: React.FC = () => {
             <HashRouter>
                             <Header />
                             <Routes>
-                                <Route path="/" element={<LandingPage />} />
+                                <Route path="/" element={<LandingRedirect />} />
                                 <Route path="/*" element={
                                     <MainLayout>
                                         <Routes>

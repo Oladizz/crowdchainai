@@ -94,7 +94,7 @@ const PublicProfilePage: React.FC = () => {
                             <CopyIcon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
                         </button>
                         <div className="mt-4 flex items-center justify-center sm:justify-start gap-4">
-                            {twitter && <SocialIcon url={twitter} style={{ height: 24, width: 24 }} bgColor="transparent" fgColor="#888888" />}
+                            {twitter && (twitter.startsWith('https://') || twitter.startsWith('http://')) && <SocialIcon url={twitter} style={{ height: 24, width: 24 }} bgColor="transparent" fgColor="#888888" />}
                             {website && <a href={website} target="_blank" rel="noopener noreferrer"><LinkIcon className="w-6 h-6 text-brand-muted hover:text-white" /></a>}
                         </div>
                         {isOwnProfile && (

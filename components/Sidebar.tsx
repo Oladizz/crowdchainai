@@ -1,7 +1,7 @@
 
 
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 
 const HomeIcon: React.FC<{className?: string}> = ({className}) => (
@@ -59,10 +59,10 @@ const Sidebar: React.FC = () => {
     const { user, truncateAddress } = useAppContext();
     return (
         <aside className="fixed top-0 left-0 z-40 w-64 h-screen bg-brand-surface/60 backdrop-blur-lg border-r border-white/10 hidden md:flex flex-col p-4">
-            <div className="flex items-center space-x-2 mb-8 px-2">
+            <Link to="/" state={{ fromLogo: true }} className="flex items-center space-x-2 mb-8 px-2">
                 <img src="https://i.postimg.cc/RVSP1wh3/Crowd-logo.png" alt="CrowdChain Logo" className="h-8 w-8 text-brand-blue" />
                 <span className="text-xl font-bold text-white tracking-wider">CrowdChain</span>
-            </div>
+            </Link>
             <nav className="flex-1 flex flex-col space-y-2">
 
                 <NavItem to="/explore" label="Explore" icon={CompassIcon} />

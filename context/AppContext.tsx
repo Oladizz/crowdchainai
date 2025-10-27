@@ -66,7 +66,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const BASE_SEPOLIA_CHAIN_ID = '0x14a34'; // 84532 in hex
 // NOTE: For demonstration purposes, this wallet is designated as an admin.
-const ADMIN_WALLETS = ['0xf68f2973d5347a8a27Ee3be0618c37b52c846D50'];
+const ADMIN_WALLETS = ['0xf68f2973d5347a8a27ee3be0618c37b52c846d50'];
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -265,7 +265,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const superAdminRef = doc(db, "superAdmins", walletAddress);
       const superAdminSnap = await getDoc(superAdminRef);
 
-      const isAdmin = ADMIN_WALLETS.includes(walletAddress) || adminSnap.exists() || superAdminSnap.exists();
+      const isAdmin = ADMIN_WALLETS.map(a => a.toLowerCase()).includes(walletAddress) || adminSnap.exists() || superAdminSnap.exists();
 
       if (userSnap.exists()) {
           const userData = userSnap.data();
