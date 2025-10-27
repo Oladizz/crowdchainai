@@ -130,6 +130,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (crowdChainContract) {
         const mergedProjects = await Promise.all(firebaseProjects.map(async (project) => {
           try {
+            // FIX: Ensure project.id is a valid number before calling the contract
+            if (!/^\d+$/.test(project.id)) {
+              console.warn(`Project with invalid ID "${project.id}" found, skipping on-chain data merge.`);
+              return project;
+            }
             const onChainProject = await crowdChainContract.projects(project.id);
             
             // Map ProjectState enum to frontend daoStatus
@@ -514,19 +519,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             milestoneDescriptions,
             milestoneFunds
         );
-        await tx.wait();
+        const receipt = await tx.wait();
 
-        // --- Firebase Update (for UI purposes, can be removed if fetching directly from blockchain) ---
+        let newProjectId;
+        if (receipt.logs) {
+            for (const log of receipt.logs) {
+                try {
+                    const parsedLog = crowdChainContract.interface.parseLog(log);
+                    if (parsedLog && parsedLog.name === "ProjectCreated") {
+                        newProjectId = parsedLog.args.id.toString();
+                        break;
+                    }
+                } catch (error) {
+                    // Not a log from this contract, ignore
+                }
+            }
+        }
+
+        if (!newProjectId) {
+            // Fallback if event parsing fails
+            newProjectId = (await crowdChainContract.projectCounter()).toString();
+            addToast("Could not find ProjectCreated event, using fallback ID.", "info");
+        }
+
         const projectPayload = {
+            id: newProjectId,
             name: projectData.name,
             creator: user.username || user.walletAddress,
             creatorWallet: user.walletAddress,
-            image: `https://picsum.photos/seed/${Date.now()}/800/600`, // Placeholder image
+            image: `https://picsum.photos/seed/${Date.now()}/800/600`,
             description: projectData.description,
             category: projectData.category,
             fundingGoal: fundingGoal,
             amountRaised: 0,
-            deadline: new Date(deadline * 1000).toISOString(), // Convert back to ISO string for Firebase
+            deadline: new Date(deadline * 1000).toISOString(),
             milestones: projectData.milestones.map((m, index) => ({
                 id: index + 1,
                 title: m.title,
@@ -539,10 +565,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             backers: [],
         };
 
-        const projectDocRef = await addDoc(collection(db, "projects"), projectPayload);
+        const projectDocRef = doc(db, "projects", newProjectId);
+        await setDoc(projectDocRef, projectPayload);
 
         await addDoc(collection(db, "proposals"), {
-            projectId: projectDocRef.id,
+            projectId: newProjectId,
             projectName: projectData.name,
             type: 'New Project',
             description: `Proposal to approve the new project: "${projectData.name}".`,
@@ -552,9 +579,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
 
         const userRef = doc(db, "users", user.walletAddress.toLowerCase());
-        const updatedCreatedProjectIds = [...user.createdProjectIds, projectDocRef.id];
-        await updateDoc(userRef, { createdProjectIds: updatedCreatedProjectIds });
-        // --- End Firebase Update ---
+        await updateDoc(userRef, { createdProjectIds: arrayUnion(newProjectId) });
 
         addToast('Project submitted to DAO for review!', 'success');
     } catch (e) {
