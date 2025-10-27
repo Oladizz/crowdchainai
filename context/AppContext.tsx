@@ -60,7 +60,6 @@ interface AppContextType {
   getUserProfileByWallet: (walletAddress: string) => User | null;
   updateProjectDaoStatus: (projectId: string, status: 'Approved' | 'Rejected') => void;
   updateUserRole: (walletAddress: string, role: 'creator' | 'investor') => void;
-  makeSuperAdmin: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -683,23 +682,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const makeSuperAdmin = async () => {
-    if (!user) {
-      addToast("You must be logged in.", "error");
-      return;
-    }
-    try {
-      const superAdminRef = doc(db, "superAdmins", user.walletAddress.toLowerCase());
-      await setDoc(superAdminRef, { isSuperAdmin: true });
-      addToast("You are now a super admin! Reconnecting wallet to apply changes...", "success");
-      // Re-run connect wallet to update roles
-      await connectWallet();
-    } catch (e) {
-      console.error("Error making super admin: ", e);
-      addToast("Failed to become super admin.", "error");
-    }
-  };
-
   const getAllUsers = async () => {
     try {
         const querySnapshot = await getDocs(collection(db, "users"));
@@ -711,7 +693,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   return (
-    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, isGetStartedModalOpen, openGetStartedModal, closeGetStartedModal, isLoginModalOpen, openLoginModal, closeLoginModal, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole, makeSuperAdmin }}>
+    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, isGetStartedModalOpen, openGetStartedModal, closeGetStartedModal, isLoginModalOpen, openLoginModal, closeLoginModal, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole }}>
       {children}
     </AppContext.Provider>
   );
