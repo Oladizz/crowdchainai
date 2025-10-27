@@ -7,7 +7,7 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ value, max }) => {
-  const percentage = max > 0 ? (value / max) * 100 : 0;
+  const percentage = max > 0 ? Math.min((value / max) * 100, 100) : 0;
 
   return (
     <div className="w-full bg-brand-surface rounded-full h-2.5">

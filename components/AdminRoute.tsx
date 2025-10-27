@@ -1,6 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
 import Spinner from './Spinner';
 import { useAppContext } from '../context/AppContext';
@@ -10,43 +8,9 @@ interface AdminRouteProps {
 }
 
 const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-    const { user, addToast } = useAppContext();
-    const [isAdmin, setIsAdmin] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const { user, isLoading } = useAppContext(); // Use isLoading from context
 
-    useEffect(() => {
-        const checkAdminStatus = async () => {
-            try {
-                if (user?.walletAddress) {
-                    const adminRef = doc(db, "admins", user.walletAddress.toLowerCase());
-                    const adminDoc = await getDoc(adminRef);
-                    if (adminDoc.exists()) {
-                        setIsAdmin(true);
-                    } else {
-                        addToast("You don't have permission to access this page.", 'error');
-                        setIsAdmin(false);
-                    }
-                } else {
-                    setIsAdmin(false);
-                }
-            } catch (error) {
-                console.error("Error checking admin status:", error);
-                addToast("An error occurred while checking admin status.", 'error');
-                setIsAdmin(false);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Delay check slightly to allow user context to populate
-        const timer = setTimeout(() => {
-            checkAdminStatus();
-        }, 500);
-
-        return () => clearTimeout(timer);
-    }, [user, addToast]);
-
-    if (loading) {
+    if (isLoading) { // Use the app's global loading state
         return (
             <div className="flex justify-center items-center h-screen bg-brand-bg">
                 <Spinner className="h-8 w-8" />
@@ -54,7 +18,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
         );
     }
 
-    if (!isAdmin) {
+    if (!user || user.role !== 'admin') {
+        // No need for a toast here, as it might show up unnecessarily on page load for non-admins.
+        // The redirect is sufficient.
         return <Navigate to="/" replace />;
     }
 

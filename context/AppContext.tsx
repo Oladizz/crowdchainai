@@ -82,6 +82,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isGetStartedModalOpen, setIsGetStartedModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
+  useEffect(() => {
+    const addSuperAdmin = async () => {
+        const superAdminAddress = '0xf68f2973d5347a8a27ee3be0618c37b52c846d50';
+        const superAdminRef = doc(db, "superAdmins", superAdminAddress.toLowerCase());
+        const superAdminSnap = await getDoc(superAdminRef);
+        if (!superAdminSnap.exists()) {
+            await setDoc(superAdminRef, { isSuperAdmin: true });
+            console.log("Super admin created.");
+        }
+    };
+    addSuperAdmin();
+  }, []);
+
   const openGetStartedModal = () => {
     console.log('openGetStartedModal called');
     setIsGetStartedModalOpen(true);
@@ -397,6 +410,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const proposalData = proposalDoc.data();
         const projectId = proposalData.projectId;
         const milestoneId = proposalData.milestoneId; // Assuming milestoneId is stored in the proposal
+
+        const isFunder = user.fundedProjects.some(p => p.projectId === projectId);
+        if (!isFunder) {
+            addToast("Only backers of this project can vote on its proposals.", 'error');
+            return;
+        }
 
         if (proposalData.votedBy && proposalData.votedBy.includes(user.walletAddress)) {
             addToast("You have already voted on this proposal.", 'error');

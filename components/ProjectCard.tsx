@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Project } from '../context/types';
-import ProgressBar from './ProgressBar';
+import { useAppContext } from '../context/AppContext';
 
 const UserIcon: React.FC<{className?: string}> = ({className}) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -16,6 +16,7 @@ interface ProjectCardProps {
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project, creatorUsername, creatorAvatar }) => {
+  const { truncateAddress } = useAppContext();
   const percentage = Math.round((project.amountRaised / project.fundingGoal) * 100);
   const daysLeft = Math.ceil((new Date(project.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
@@ -53,7 +54,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, creatorUsername, cre
                     </div>
                 )}
                 <span className="text-xs text-brand-muted group-hover/creator:text-white truncate transition-colors">
-                    by {creatorUsername || project.creator}
+                    by {creatorUsername || truncateAddress(project.creator)}
                 </span>
             </a>
         </div>

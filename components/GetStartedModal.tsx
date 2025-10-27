@@ -5,13 +5,19 @@ import Modal from './Modal';
 import { useAppContext } from '../context/AppContext';
 
 const GetStartedModal: React.FC = () => {
-  const { isGetStartedModalOpen, closeGetStartedModal, openLoginModal } = useAppContext();
+  const { isGetStartedModalOpen, closeGetStartedModal, openLoginModal, login } = useAppContext();
   const navigate = useNavigate();
 
   const handleExplore = () => {
+    login();
     closeGetStartedModal();
     navigate('/explore');
   };
+
+  const handleCreate = () => {
+    closeGetStartedModal();
+    openLoginModal();
+  }
 
   return (
     <Modal isOpen={isGetStartedModalOpen} onClose={closeGetStartedModal} title="Get Started">
@@ -28,10 +34,7 @@ const GetStartedModal: React.FC = () => {
           </p>
           <div className="mt-10 animate-slide-in-bottom flex flex-col sm:flex-row justify-center items-center gap-4" style={{ animationDelay: '1.5s' }}>
             <Button
-              onClick={() => {
-                closeGetStartedModal();
-                openLoginModal();
-              }}
+              onClick={handleCreate}
               variant="primary"
               className="text-base px-8 py-3 rounded-full shadow-lg shadow-brand-blue/30 transition-all duration-300 hover:shadow-2xl hover:shadow-brand-blue/50 hover:scale-105"
             >

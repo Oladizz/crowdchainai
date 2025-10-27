@@ -58,7 +58,7 @@ const MilestoneStatusIcon: React.FC<{ status: Milestone['status'] }> = ({ status
 
 const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { projects, user, fundProject, addToast } = useAppContext();
+  const { projects, user, fundProject, addToast, truncateAddress } = useAppContext();
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
   const [summary, setSummary] = useState('');
@@ -262,7 +262,7 @@ const ProjectDetailPage: React.FC = () => {
                     <UserCircleIcon />
                 </div>
                 <div className="flex-grow min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white break-words truncate">{project.creator}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white break-words truncate">{project.creator.startsWith('0x') ? truncateAddress(project.creator) : project.creator}</p>
                     <Link to={`/profile/${project.creatorWallet}`} className="text-xs text-brand-blue-light hover:underline mt-1 inline-block">
                         View Profile
                     </Link>

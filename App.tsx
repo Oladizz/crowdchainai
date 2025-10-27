@@ -20,7 +20,7 @@ import Sidebar from './components/Sidebar';
 import ToastContainer from './components/ToastContainer';
 import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
-import ProfilePage from './pages/ProfilePage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import AdminPage from './pages/AdminPage';
 import AdminRoute from './components/AdminRoute';
 import LoginModal from './components/LoginModal';
@@ -124,7 +124,7 @@ const App: React.FC = () => {
                                             <Route path="/waitlist" element={<WaitlistPage />} />
                                             <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                                             {/* <Route path="/ai-tools" element={<AiToolsPage />} /> */}
-                                            <Route path="/profile/:walletAddress" element={<ProfilePage />} />
+                                            <Route path="/profile/:walletAddress" element={<PublicProfilePage />} />
                                         </Routes>
                                     </MainLayout>
                                 } />

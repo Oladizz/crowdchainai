@@ -14,6 +14,7 @@ interface ProposalCardProps {
 
 const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onVoteClick, onSummaryClick, isSummaryLoading }) => {
   const { user } = useAppContext();
+  const isFunder = user?.fundedProjects.some(p => p.projectId === proposal.projectId);
   const totalVotes = proposal.votesFor + proposal.votesAgainst;
   const forPercentage = totalVotes > 0 ? (proposal.votesFor / totalVotes) * 100 : 0;
   const againstPercentage = totalVotes > 0 ? (proposal.votesAgainst / totalVotes) * 100 : 0;
@@ -54,8 +55,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({ proposal, onVoteClick, onSu
         <Link to={`/project/${proposal.projectId}`} className="flex-1 col-span-1">
             <Button variant="secondary" className="w-full">Details</Button>
         </Link>
-        <Button data-guide="vote-button" variant="primary" className="flex-1" onClick={onVoteClick} disabled={!user || daysLeft <= 0}>
-          {daysLeft > 0 ? 'Vote Now' : 'Voting Ended'}
+        <Button data-guide="vote-button" variant="primary" className="flex-1" onClick={onVoteClick} disabled={!user || daysLeft <= 0 || !isFunder}>
+          {daysLeft > 0 ? (!user ? 'Connect to Vote' : !isFunder ? 'Must be a backer' : 'Vote Now') : 'Voting Ended'}
         </Button>
       </div>
     </div>

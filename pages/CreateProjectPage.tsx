@@ -1,7 +1,7 @@
 
 
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { GoogleGenAI, Type } from '@google/genai';
 import { ProjectCategory } from '../context/types';
 import Button from '../components/Button';
@@ -22,6 +22,18 @@ interface GeneratedProjectData {
 }
 
 const CreateProjectPage: React.FC = () => {
+    const { user, createProject, addToast } = useAppContext();
+
+    useEffect(() => {
+        if (user && user.role === 'investor') {
+            addToast("Only creators can create new projects.", 'error');
+        }
+    }, [user, addToast]);
+
+    if (!user || user.role === 'investor') {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     const [mode, setMode] = useState<'ai' | 'manual'>('ai');
     
     // AI Mode State
@@ -40,7 +52,6 @@ const CreateProjectPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [submitted, setSubmitted] = useState(false);
-    const { user, createProject } = useAppContext();
 
     const totalManualGoal = useMemo(() => {
         return manualData.milestones.reduce((sum, m) => sum + (Number(m.fundsRequired) || 0), 0);
