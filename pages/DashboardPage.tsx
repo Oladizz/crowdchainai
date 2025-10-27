@@ -15,7 +15,7 @@ const UserIcon: React.FC<{className?: string}> = ({className}) => (
 );
 
 const DashboardPage: React.FC = () => {
-    const { user, login } = useAppContext();
+    const { user, login, makeSuperAdmin } = useAppContext();
     const [activeTab, setActiveTab] = useState<Tab>(user?.role === 'creator' ? 'projects' : 'investments');
 
     if (!user) {
@@ -82,6 +82,12 @@ const DashboardPage: React.FC = () => {
                 <div>
                     {renderTabContent()}
                 </div>
+            </div>
+
+            <div className="mt-8">
+                <Button onClick={makeSuperAdmin} variant="secondary">
+                    Make Me Super Admin (Temporary)
+                </Button>
             </div>
         </div>
     );
