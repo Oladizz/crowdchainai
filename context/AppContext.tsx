@@ -367,6 +367,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addToast("Blockchain contract not loaded.", 'error');
         return;
     }
+    if (isNaN(amount) || amount <= 0) {
+        addToast("Invalid funding amount.", 'error');
+        return;
+    }
 
     try {
         const amountAsString = amount.toString();
