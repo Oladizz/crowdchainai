@@ -67,26 +67,65 @@ const AdminPage: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+        const { signal } = controller;
+
+        const fetchOverviewStats = async () => {
+            try {
+                const projectsSnap = await getDocs(collection(db, "projects"));
+                if (!isMounted) return;
+                const projectsData = projectsSnap.docs.map(d => d.data() as Project);
+                const totalFunds = Math.round(projectsData.reduce((sum, p) => sum + p.amountRaised, 0));
+                const activeProjects = projectsData.filter(p => p.daoStatus === 'Approved').length;
+                const pendingProjects = projectsData.filter(p => p.daoStatus === 'Pending').length;
+
+                const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
+                if (!isMounted) return;
+                const proposalsCount = (await getCountFromServer(collection(db, "proposals"))).data().count;
+                if (!isMounted) return;
+                const waitlistCount = (await getCountFromServer(collection(db, "waitlist"))).data().count;
+                if (!isMounted) return;
+
+                setOverviewStats({
+                    totalFunds,
+                    activeProjects,
+                    pendingProjects,
+                    totalUsers: usersCount,
+                    activeProposals: proposalsCount,
+                    waitlistSignups: waitlistCount,
+                });
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error("Failed to fetch overview stats:", error);
+                }
+            }
+        };
+
         fetchOverviewStats();
+
         const unsubAdmins = onSnapshot(collection(db, "admins"), (snap) => {
             const adminSet = new Set(snap.docs.map(doc => doc.id));
-            setAdmins(adminSet);
+            if (isMounted) setAdmins(adminSet);
         });
         const unsubSuperAdmins = onSnapshot(collection(db, "superAdmins"), (snap) => {
             const superAdminSet = new Set(snap.docs.map(doc => doc.id));
-            setSuperAdmins(superAdminSet);
+            if (isMounted) setSuperAdmins(superAdminSet);
         });
+
         return () => {
+            isMounted = false;
+            controller.abort();
             unsubAdmins();
             unsubSuperAdmins();
         };
-    }, [fetchOverviewStats]);
+    }, []);
 
     const handleSearchChange = (tab: Tab, value: string) => {
         setSearchTerms(prev => ({ ...prev, [tab]: value }));
     };
 
-    const fetchData = useCallback(async (dataType: Tab, loadMore = false) => {
+    const fetchData = useCallback(async (dataType: Tab, loadMore = false, signal: AbortSignal) => {
         if (dataType === 'overview') return;
         if (!loadMore) {
             setHasMore(prev => ({ ...prev, [dataType]: true }));
@@ -119,6 +158,8 @@ const AdminPage: React.FC = () => {
 
         try {
             const snap = await getDocs(q);
+            if (signal.aborted) return;
+
             const newData = snap.docs.map(d => ({ ...d.data(), id: d.id, walletAddress: d.id }));
 
             if (loadMore) {
@@ -132,14 +173,22 @@ const AdminPage: React.FC = () => {
             }
             setLastDocs(prev => ({ ...prev, [dataType]: snap.docs[snap.docs.length - 1] }));
         } catch (error) {
-            console.error(`Failed to fetch ${dataType}:`, error);
-            addToast(`Failed to fetch ${dataType}. Check console for indexing errors.`, 'error');
+            if (error.name !== 'AbortError') {
+                console.error(`Failed to fetch ${dataType}:`, error);
+                addToast(`Failed to fetch ${dataType}. Check console for indexing errors.`, 'error');
+            }
         }
     }, [lastDocs, addToast, searchTerms]);
 
     useEffect(() => {
+        let isMounted = true;
         if (activeTab !== 'overview') {
-            fetchData(activeTab);
+            const controller = new AbortController();
+            fetchData(activeTab, false, controller.signal);
+            return () => {
+                isMounted = false;
+                controller.abort();
+            };
         }
     }, [activeTab, fetchData]);
 

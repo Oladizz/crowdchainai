@@ -68,6 +68,9 @@ const AiInsightsCard: React.FC<{ project: Project }> = ({ project }) => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        const controller = new AbortController();
+        const { signal } = controller;
+
         const fetchInsights = async () => {
             setIsLoading(true);
             setError(null);
@@ -91,17 +94,23 @@ const AiInsightsCard: React.FC<{ project: Project }> = ({ project }) => {
                     model: 'gemini-2.5-flash',
                     contents: prompt,
                     config: { responseMimeType: "application/json", responseSchema },
-                });
+                }, { signal });
                 
                 setInsights(JSON.parse(response.text));
             } catch (err) {
-                console.error("AI insights failed:", err);
-                setError("Could not load AI insights.");
+                if (err.name !== 'AbortError') {
+                    console.error("AI insights failed:", err);
+                    setError("Could not load AI insights.");
+                }
             } finally {
                 setIsLoading(false);
             }
         };
         fetchInsights();
+
+        return () => {
+            controller.abort();
+        };
     }, [project]);
 
     return (

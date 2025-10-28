@@ -80,10 +80,13 @@ const ProjectDetailPage: React.FC = () => {
 
   const handleFundSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (project && fundAmount && Number(fundAmount) > 0) {
-      fundProject(project.id, Number(fundAmount));
+    const numericAmount = Number(fundAmount);
+    if (project && !isNaN(numericAmount) && numericAmount > 0) {
+      fundProject(project.id, numericAmount);
       setIsFundingModalOpen(false);
       setFundAmount('');
+    } else {
+      addToast('Please enter a valid amount.', 'error');
     }
   };
 
