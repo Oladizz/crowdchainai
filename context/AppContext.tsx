@@ -369,7 +369,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     try {
-        const tx = await crowdChainContract.fundProject(projectId, { value: ethers.parseEther(amount.toString()) });
+        const amountAsString = amount.toString();
+        const tx = await crowdChainContract.fundProject(Number(projectId), { value: ethers.parseEther(amountAsString) });
         await tx.wait();
 
         // --- Firebase Update (for UI purposes) ---
