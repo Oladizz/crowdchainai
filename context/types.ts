@@ -19,6 +19,7 @@ export interface Milestone {
 export interface Project {
   id: string;
   name: string;
+  name_lowercase?: string;
   creator: string;
   creatorWallet: string;
   image: string;
@@ -41,11 +42,13 @@ export interface Proposal {
   votesFor: number;
   votesAgainst: number;
   deadline: string;
+  milestoneId?: number;
 }
 
 export interface User {
   walletAddress: string;
   username?: string;
+  username_lowercase?: string;
   avatar?: string;
   bio?: string;
   twitter?: string;
@@ -53,7 +56,7 @@ export interface User {
   status?: 'Active' | 'Suspended';
   createdProjectIds: string[];
   fundedProjects: { projectId: string; amount: number }[];
-  role?: 'creator' | 'investor' | 'admin';
+  role?: 'creator' | 'investor' | 'admin' | 'premium';
 }
 
 export interface WaitlistEntry {
@@ -66,4 +69,13 @@ export interface ContactMessage {
   email: string;
   message: string;
   date: string;
+}
+
+export interface Report {
+  id?: string;
+  type: 'project' | 'user';
+  reportedId: string;
+  reporterId: string;
+  reason: string;
+  timestamp: any; // serverTimestamp
 }

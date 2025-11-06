@@ -21,6 +21,7 @@ const Footer: React.FC = () => {
                         <Link to="/about" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">About</Link>
                         <Link to="/contact" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Contact</Link>
                         <Link to="/waitlist" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Waitlist</Link>
+                        <Link to="/report-bug" className="text-brand-muted hover:text-gray-900 dark:hover:text-white transition-colors duration-300">Report a Bug</Link>
                     </nav>
                     <div className="flex space-x-6">
                         <SocialIcon href="https://x.com/crowdchainDapp">

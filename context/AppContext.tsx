@@ -1,11 +1,13 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Project, Proposal, User, ProjectCategory, Milestone, WaitlistEntry, ContactMessage } from './types';
+import { Project, Proposal, User, ProjectCategory, Milestone, WaitlistEntry, ContactMessage, Report } from './types';
 import { db } from '../services/firebase';
-import { collection, onSnapshot, doc, updateDoc, addDoc, increment, getDoc, setDoc, runTransaction, arrayUnion, serverTimestamp, query, orderBy, writeBatch } from "firebase/firestore";
+import { collection, onSnapshot, doc, updateDoc, addDoc, increment, getDoc, setDoc, runTransaction, arrayUnion, serverTimestamp, query, orderBy, writeBatch, deleteDoc } from "firebase/firestore";
 import { ethers } from "ethers";
 import CrowdChainABI from "../smart-contract/artifacts/contracts/CrowdChain.sol/CrowdChain.json";
 
-const CROWDCHAIN_CONTRACT_ADDRESS = "0x01525fD607fd12dDBdFb99102Af955a618EBaE21";
+import CrowdChainAccessNFT from "../smart-contract/artifacts/contracts/CrowdChainAccessNFT.sol/CrowdChainAccessNFT.json";
+
+const CROWDCHAIN_CONTRACT_ADDRESS = "0x256c0D29b78203987319DB31a3e306Ed8928bb48";
 
 interface GeneratedProjectData {
     name: string;
@@ -16,6 +18,8 @@ interface GeneratedProjectData {
         description: string;
         fundsRequired: number;
     }[];
+    image: File | string;
+    durationDays: number;
 }
 
 interface Toast {
@@ -60,6 +64,9 @@ interface AppContextType {
   getUserProfileByWallet: (walletAddress: string) => User | null;
   updateProjectDaoStatus: (projectId: string, status: 'Approved' | 'Rejected') => void;
   updateUserRole: (walletAddress: string, role: 'creator' | 'investor') => void;
+  reportItem: (report: Omit<Report, 'id' | 'timestamp'>) => void;
+  addBugReport: (description: string) => void;
+  mintPremiumNFT: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -141,33 +148,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             let daoStatus: Project['daoStatus'];
             switch (onChainProject.state) {
               case 0: // Fundraising
-                daoStatus = 'Pending'; // Or a more appropriate status if available
+                daoStatus = 'Approved'; // Fundraising projects should be available for funding.
                 break;
               case 1: // Expired
-                daoStatus = 'Rejected'; // Or a more appropriate status
+                daoStatus = 'Rejected'; 
                 break;
               case 2: // Successful
-                daoStatus = 'Approved';
+                daoStatus = 'Approved'; // Successful projects are approved, funding is closed by deadline.
                 break;
               default:
                 daoStatus = 'Pending';
             }
 
-            // Merge on-chain milestone data
-            const mergedMilestones = project.milestones.map((milestone, index) => {
-              const onChainMilestone = onChainProject.milestones[index]; // Assuming direct index mapping
-              return {
-                ...milestone,
-                state: onChainMilestone.state, // Update milestone state
-                yesVotes: Number(onChainMilestone.yesVotes), // Update votes
-              };
-            });
-
+            // The `projects` getter of the smart contract does not return milestone data.
+            // This was causing a TypeError. The milestone data from Firestore will be used, 
+            // and on-chain interactions should update Firestore to reflect changes.
             return {
               ...project,
               amountRaised: Number(ethers.formatEther(onChainProject.amountRaised)), // Convert from Wei to Ether
               daoStatus: daoStatus, // Update project state from on-chain
-              milestones: mergedMilestones,
             };
           } catch (e) {
             console.error(`Error fetching on-chain data for project ${project.id}:`, e);
@@ -281,6 +280,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           const newUser: User = {
               walletAddress,
               username: '',
+              username_lowercase: '',
               avatar: '',
               bio: '',
               twitter: '',
@@ -398,9 +398,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // --- End Firebase Update ---
 
         addToast(`Successfully funded with ${amount}!`, 'success');
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error funding project: ", e);
-        addToast('Failed to fund project.', 'error');
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            addToast('Transaction rejected in wallet.', 'error');
+        } else if (e.code === 'INSUFFICIENT_FUNDS') {
+            addToast('Insufficient funds to complete the transaction.', 'error');
+        } else {
+            addToast('Failed to fund project.', 'error');
+        }
     }
   };
 
@@ -467,8 +473,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addToast('Your vote has been cast!', 'success');
     } catch (e: any) {
         console.error("Error voting on proposal: ", e);
-        const errorMessage = typeof e === 'string' ? e : 'Failed to cast vote.';
-        addToast(errorMessage, 'error');
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            addToast('Transaction rejected in wallet.', 'error');
+        } else {
+            const errorMessage = e.reason || 'Failed to cast vote.';
+            addToast(errorMessage, 'error');
+        }
     }
   };
   
@@ -492,6 +502,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await updateDoc(projectRef, { milestones: newMilestones });
 
         if (status === 'In Review') {
+            await addDoc(collection(db, "proposals"), {
+                projectId: projectId,
+                projectName: project.name,
+                type: 'Milestone Release',
+                description: `Proposal to release funds for milestone: "${project.milestones.find(m => m.id === milestoneId)?.title}".`,
+                votesFor: 0,
+                votesAgainst: 0,
+                deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                milestoneId: milestoneId
+            });
             addToast('Milestone submitted for DAO review.', 'info');
         }
     } catch (e) {
@@ -511,10 +531,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     try {
+        let imageUrl = '';
+        if (typeof projectData.image === 'string') {
+            imageUrl = projectData.image;
+        } else {
+            const storage = getStorage();
+            const imageRef = ref(storage, `project-images/${projectData.image.name}-${Date.now()}`);
+            const snapshot = await uploadBytes(imageRef, projectData.image);
+            imageUrl = await getDownloadURL(snapshot.ref);
+        }
+
         const fundingGoal = projectData.milestones.reduce((sum, m) => sum + m.fundsRequired, 0);
         const milestoneDescriptions = projectData.milestones.map(m => m.description);
         const milestoneFunds = projectData.milestones.map(m => m.fundsRequired);
-        const deadline = Math.floor(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).getTime() / 1000); // 30 days from now in seconds
+        const deadline = Math.floor(new Date(Date.now() + projectData.durationDays * 24 * 60 * 60 * 1000).getTime() / 1000); // 30 days from now in seconds
 
         const tx = await crowdChainContract.createProject(
             projectData.name,
@@ -550,9 +580,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const projectPayload = {
             id: newProjectId,
             name: projectData.name,
+            name_lowercase: projectData.name.toLowerCase(),
             creator: user.username || user.walletAddress,
             creatorWallet: user.walletAddress,
-            image: `https://picsum.photos/seed/${Date.now()}/800/600`,
+            image: imageUrl,
             description: projectData.description,
             category: projectData.category,
             fundingGoal: fundingGoal,
@@ -587,9 +618,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         await updateDoc(userRef, { createdProjectIds: arrayUnion(newProjectId) });
 
         addToast('Project submitted to DAO for review!', 'success');
-    } catch (e) {
+    } catch (e: any) {
         console.error("Error creating project: ", e);
-        addToast('Failed to create project.', 'error');
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            addToast('Transaction rejected in wallet.', 'error');
+        } else {
+            addToast('Failed to create project.', 'error');
+        }
     }
   };
 
@@ -600,6 +635,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const cleanedProfileData = Object.fromEntries(
             Object.entries(profileData).filter(([, value]) => value !== undefined)
         );
+
+        if (cleanedProfileData.username) {
+            cleanedProfileData.username_lowercase = cleanedProfileData.username.toLowerCase();
+        }
 
         if (Object.keys(cleanedProfileData).length === 0) {
             addToast('No changes to save.', 'info');
@@ -722,11 +761,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+    try {
+        console.error("Error submitting report: ", e);
+        addToast('Failed to submit report.', 'error');
+    }
+  };
+
+  const addBugReport = async (description: string) => {
+    try {
+        await addDoc(collection(db, "bug_reports"), {
+            description,
+            timestamp: serverTimestamp(),
+            userId: user?.walletAddress || 'anonymous'
+        });
+        addToast('Bug report submitted successfully.', 'success');
+    } catch (e) {
+        console.error("Error submitting bug report: ", e);
+        addToast('Failed to submit bug report.', 'error');
+    }
+  };
+
+  const mintPremiumNFT = async () => {
+    if (!user) return;
+    if (!crowdChainContract) {
+        addToast("Blockchain contract not loaded.", 'error');
+        return;
+    }
+
+    try {
+        const nftContractAddress = await crowdChainContract.accessNFT();
+        const nftContract = new ethers.Contract(nftContractAddress, CrowdChainAccessNFT.abi, await (new ethers.BrowserProvider((window as any).ethereum)).getSigner());
+        const premiumRate = await nftContract.premiumNFTRate();
+        const tx = await nftContract.mintPremiumNFT({ value: premiumRate });
+        await tx.wait();
+
+        const userRef = doc(db, "users", user.walletAddress.toLowerCase());
+        await updateDoc(userRef, { role: 'premium' });
+        setUser({ ...user, role: 'premium' });
+
+        addToast('Congratulations! You are now a Premium User.', 'success');
+    } catch (e: any) {
+        console.error("Error minting premium NFT: ", e);
+        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+            addToast('Transaction rejected in wallet.', 'error');
+        } else if (e.code === 'INSUFFICIENT_FUNDS') {
+            addToast('Insufficient funds to mint the Premium NFT.', 'error');
+        } else {
+            addToast('Failed to mint Premium NFT.', 'error');
+        }
+    }
+  };
+
   return (
-    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, isGetStartedModalOpen, openGetStartedModal, closeGetStartedModal, isLoginModalOpen, openLoginModal, closeLoginModal, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole }}>
+    <AppContext.Provider value={{ projects, proposals, user, allUsers, waitlist, contactMessages, theme, toasts, isLoading, isGetStartedModalOpen, openGetStartedModal, closeGetStartedModal, isLoginModalOpen, openLoginModal, closeLoginModal, addToast, removeToast, login: connectWallet, logout, toggleTheme, fundProject, voteOnProposal, updateMilestoneStatus, createProject, updateUserProfile, setUserAsCreator, addWaitlistEntry, addContactMessage, suspendUser, reinstateUser, deleteUser, truncateAddress, getUserProfileByWallet, updateProjectDaoStatus, updateUserRole, reportItem, addBugReport, mintPremiumNFT }}>
       {children}
     </AppContext.Provider>
   );
+
 };
 
 export const useAppContext = () => {

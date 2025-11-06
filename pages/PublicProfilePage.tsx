@@ -9,6 +9,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import StatCard from '../components/StatCard';
 import ProjectCardSkeleton from '../components/ProjectCardSkeleton';
 import { SocialIcon } from 'react-social-icons';
+import ReportModal from '../components/ReportModal';
 
 const UserCircleIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-24 w-24 text-brand-muted"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -30,8 +31,9 @@ const LinkIcon: React.FC<{className?: string}> = ({ className }) => (
 
 const PublicProfilePage: React.FC = () => {
     const { walletAddress } = useParams<{ walletAddress: string }>();
-    const { projects, user: loggedInUser, truncateAddress, addToast, getUserProfileByWallet, isLoading } = useAppContext();
+    const { projects, user: loggedInUser, truncateAddress, addToast, getUserProfileByWallet, isLoading, reportItem } = useAppContext();
     const [profileData, setProfileData] = useState<User | null>(null);
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
     useEffect(() => {
         if (walletAddress) {
@@ -44,6 +46,17 @@ const PublicProfilePage: React.FC = () => {
             navigator.clipboard.writeText(walletAddress);
             addToast('Wallet address copied to clipboard!', 'success');
         }
+    };
+
+    const handleReportUser = (reason: string) => {
+        if (!loggedInUser || !walletAddress) return;
+        reportItem({
+            type: 'user',
+            reportedId: walletAddress,
+            reporterId: loggedInUser.walletAddress,
+            reason,
+        });
+        setIsReportModalOpen(false);
     };
 
     const createdProjects = useMemo(() => 
@@ -106,6 +119,11 @@ const PublicProfilePage: React.FC = () => {
                                 }}>Copy Link</Button>
                             </div>
                         )}
+                        {!isOwnProfile && loggedInUser && (
+                            <div className="mt-4">
+                                <Button variant="secondary" className="text-xs" onClick={() => setIsReportModalOpen(true)}>Report User</Button>
+                            </div>
+                        )}
                     </div>
                 </div>
                 {bio && <p className="mt-6 text-brand-muted text-center sm:text-left">{bio}</p>}
@@ -134,6 +152,13 @@ const PublicProfilePage: React.FC = () => {
                     </div>
                 )}
             </section>
+
+            <ReportModal
+                isOpen={isReportModalOpen}
+                onClose={() => setIsReportModalOpen(false)}
+                onSubmit={handleReportUser}
+                title={`Report ${username}`}
+            />
         </div>
     );
 };

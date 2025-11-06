@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { CrowdChain } from "./CrowdChain";
+export type { CrowdChainAccessNFT } from "./CrowdChainAccessNFT";

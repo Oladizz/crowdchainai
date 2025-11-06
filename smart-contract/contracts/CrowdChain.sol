@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
@@ -20,6 +21,7 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
         uint256 fundsRequired;
         MilestoneState state;
         uint256 yesVotes;
+        uint256 noVotes;
     }
 
     struct Project {
@@ -41,6 +43,11 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
     mapping(uint256 => Project) public projects;
     uint256 public projectCounter;
     address payable public companyWallet;
+    IERC1155 public accessNFT;
+    address public marketplaceOperator = 0x00000000000000ADc04C56Bf30aC9d3c0aAF14dC; // OpenSea Seaport 1.5
+
+    uint256 public constant MAX_DURATION = 90 days;
+    uint256 public constant VOTE_QUORUM_PERCENT = 20;
 
     event ProjectCreated(uint256 id, address indexed creator, string name, uint256 fundingGoal, uint256 deadline);
     event ProjectFunded(uint256 id, address indexed funder, uint256 amount);
@@ -48,8 +55,9 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
     event OwnershipTransferred(uint256 id, address indexed previousCreator, address indexed newCreator);
     event MilestoneFundsReleased(uint256 projectId, uint256 milestoneIndex, uint256 amount);
 
-    constructor(address payable _companyWallet) Ownable(msg.sender) {
+    constructor(address payable _companyWallet, address _accessNFTAddress) Ownable(msg.sender) {
         companyWallet = _companyWallet;
+        accessNFT = IERC1155(_accessNFTAddress);
     }
 
     function createProject(
@@ -60,8 +68,12 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
         string[] memory _milestoneDescriptions,
         uint256[] memory _milestoneFunds
     ) public whenNotPaused {
+        require(accessNFT.balanceOf(msg.sender, 0) > 0, "Must hold a Creator NFT"); // 0 is CREATOR_ID
+        require(!accessNFT.isApprovedForAll(msg.sender, marketplaceOperator), "Creator NFT must not be listed for sale");
+
         require(_fundingGoal > 0, "Funding goal must be greater than 0");
         require(_deadline > block.timestamp, "Deadline must be in the future");
+        require(_deadline <= block.timestamp + MAX_DURATION, "Deadline is too far in the future");
         require(_milestoneDescriptions.length == _milestoneFunds.length, "Milestone descriptions and funds must have the same length");
 
         uint256 totalMilestoneFunds = 0;
@@ -87,7 +99,8 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
                 description: _milestoneDescriptions[i],
                 fundsRequired: _milestoneFunds[i],
                 state: MilestoneState.Pending,
-                yesVotes: 0
+                yesVotes: 0,
+                noVotes: 0
             }));
         }
 
@@ -103,8 +116,8 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
 
         project.amountRaised += msg.value;
 
-        // Add funder to list if they are not already there
-        if (project.contributions[msg.sender] == 0) {
+        // Add funder to list if they are not already there and are not the creator
+        if (project.contributions[msg.sender] == 0 && msg.sender != project.creator) {
             project.funders.push(msg.sender);
         }
         
@@ -150,6 +163,14 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
         emit ProjectUpdate(_projectId, _message, block.timestamp);
     }
 
+    function submitMilestoneForReview(uint256 _projectId, uint256 _milestoneIndex) public whenNotPaused {
+        Project storage project = projects[_projectId];
+        require(msg.sender == project.creator, "Only the creator can submit milestones for review");
+        require(project.milestones[_milestoneIndex].state == MilestoneState.Pending, "Milestone must be pending");
+
+        project.milestones[_milestoneIndex].state = MilestoneState.InReview;
+    }
+
     function transferProjectOwnership(uint256 _projectId, address payable _newCreator) public whenNotPaused {
         Project storage project = projects[_projectId];
         require(msg.sender == project.creator, "Only the current creator can transfer ownership");
@@ -161,15 +182,20 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
         emit OwnershipTransferred(_projectId, previousCreator, _newCreator);
     }
 
-    function voteOnMilestone(uint256 _projectId, uint256 _milestoneIndex) public {
+    function voteOnMilestone(uint256 _projectId, uint256 _milestoneIndex, bool vote) public {
         Project storage project = projects[_projectId];
+        require(accessNFT.balanceOf(msg.sender, 1) > 0, "Must hold an Investor NFT to vote"); // 1 is INVESTOR_ID
         require(project.state == ProjectState.Successful, "Project is not successful");
         require(project.milestones[_milestoneIndex].state == MilestoneState.InReview, "Milestone is not in review");
         require(project.contributions[msg.sender] > 0, "Only funders can vote");
         require(!project.milestoneVotes[_milestoneIndex][msg.sender], "You have already voted on this milestone");
 
         project.milestoneVotes[_milestoneIndex][msg.sender] = true;
-        project.milestones[_milestoneIndex].yesVotes++;
+        if (vote) {
+            project.milestones[_milestoneIndex].yesVotes++;
+        } else {
+            project.milestones[_milestoneIndex].noVotes++;
+        }
     }
 
     function releaseMilestoneFunds(uint256 _projectId, uint256 _milestoneIndex) public nonReentrant {
@@ -179,7 +205,10 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
         require(msg.sender == project.creator, "Only the project creator can release funds");
         require(project.state == ProjectState.Successful, "Project is not successful");
         require(milestone.state == MilestoneState.InReview, "Milestone is not in review");
-        require(milestone.yesVotes * 2 > project.funders.length, "Milestone not approved by majority"); // Simple majority
+        if (project.funders.length > 0) {
+            require((milestone.yesVotes + milestone.noVotes) * 100 / project.funders.length >= VOTE_QUORUM_PERCENT, "Quorum not reached");
+            require(milestone.yesVotes > milestone.noVotes, "Milestone not approved by majority");
+        }
 
         uint256 milestoneAmount = milestone.fundsRequired;
         uint256 fee = (milestoneAmount * 3) / 100;
@@ -204,6 +233,10 @@ contract CrowdChain is Ownable, Pausable, ReentrancyGuard {
 
     function unpause() public onlyOwner {
         _unpause();
+    }
+
+    function getMilestones(uint256 _projectId) public view returns (Milestone[] memory) {
+        return projects[_projectId].milestones;
     }
 
     function setCompanyWallet(address payable _newCompanyWallet) public onlyOwner {

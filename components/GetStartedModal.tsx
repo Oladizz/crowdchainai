@@ -26,7 +26,7 @@ const GetStartedModal: React.FC = () => {
           <div className="animate-fade-in mx-auto mb-6">
             <img src="https://i.postimg.cc/RVSP1wh3/Crowd-logo.png" alt="CrowdChain Logo" className="h-20 w-20 mx-auto" />
           </div>
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight animate-text-focus-in" style={{ animationDelay: '0.5s' }}>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight animate-text-focus-in" style={{ animationDelay: '0.5s' }}>
             CrowdChain
           </h1>
           <p className="mt-4 max-w-2xl mx-auto text-lg md:text-xl text-brand-muted animate-fade-in" style={{ animationDelay: '1s' }}>

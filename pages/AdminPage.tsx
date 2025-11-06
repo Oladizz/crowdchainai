@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import StatCard from '../components/StatCard';
 import { useAppContext } from '../context/AppContext';
 
-type Tab = 'overview' | 'projects' | 'users' | 'proposals' | 'waitlist' | 'contacts';
+type Tab = 'overview' | 'projects' | 'users' | 'proposals' | 'waitlist' | 'contacts' | 'reports';
 
 interface WaitlistEntry {
     id: string;
@@ -25,11 +25,11 @@ interface ContactEntry {
 const PAGE_SIZE = 10;
 
 const AdminPage: React.FC = () => {
-    const { addToast, user } = useAppContext();
+    const { addToast, user, projects, proposals, allUsers, waitlist } = useAppContext();
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     
     const [data, setData] = useState<Record<string, any[]>>({
-        projects: [], proposals: [], users: [], waitlist: [], contacts: []
+        projects: [], proposals: [], users: [], waitlist: [], contacts: [], reports: []
     });
     const [lastDocs, setLastDocs] = useState<Record<string, QueryDocumentSnapshot | null>>({});
     const [hasMore, setHasMore] = useState<Record<string, boolean>>({});
@@ -45,16 +45,13 @@ const AdminPage: React.FC = () => {
         waitlistSignups: 0,
     });
 
-    const fetchOverviewStats = useCallback(async () => {
-        const projectsSnap = await getDocs(collection(db, "projects"));
-        const projectsData = projectsSnap.docs.map(d => d.data() as Project);
-        const totalFunds = Math.round(projectsData.reduce((sum, p) => sum + p.amountRaised, 0));
-        const activeProjects = projectsData.filter(p => p.daoStatus === 'Approved').length;
-        const pendingProjects = projectsData.filter(p => p.daoStatus === 'Pending').length;
-
-        const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
-        const proposalsCount = (await getCountFromServer(collection(db, "proposals"))).data().count;
-        const waitlistCount = (await getCountFromServer(collection(db, "waitlist"))).data().count;
+    useEffect(() => {
+        const totalFunds = Math.round(projects.reduce((sum, p) => sum + p.amountRaised, 0));
+        const activeProjects = projects.filter(p => p.daoStatus === 'Approved').length;
+        const pendingProjects = projects.filter(p => p.daoStatus === 'Pending').length;
+        const usersCount = allUsers.length;
+        const proposalsCount = proposals.length;
+        const waitlistCount = waitlist.length;
 
         setOverviewStats({
             totalFunds,
@@ -64,46 +61,8 @@ const AdminPage: React.FC = () => {
             activeProposals: proposalsCount,
             waitlistSignups: waitlistCount,
         });
-    }, []);
 
-    useEffect(() => {
         let isMounted = true;
-        const controller = new AbortController();
-        const { signal } = controller;
-
-        const fetchOverviewStats = async () => {
-            try {
-                const projectsSnap = await getDocs(collection(db, "projects"));
-                if (!isMounted) return;
-                const projectsData = projectsSnap.docs.map(d => d.data() as Project);
-                const totalFunds = Math.round(projectsData.reduce((sum, p) => sum + p.amountRaised, 0));
-                const activeProjects = projectsData.filter(p => p.daoStatus === 'Approved').length;
-                const pendingProjects = projectsData.filter(p => p.daoStatus === 'Pending').length;
-
-                const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
-                if (!isMounted) return;
-                const proposalsCount = (await getCountFromServer(collection(db, "proposals"))).data().count;
-                if (!isMounted) return;
-                const waitlistCount = (await getCountFromServer(collection(db, "waitlist"))).data().count;
-                if (!isMounted) return;
-
-                setOverviewStats({
-                    totalFunds,
-                    activeProjects,
-                    pendingProjects,
-                    totalUsers: usersCount,
-                    activeProposals: proposalsCount,
-                    waitlistSignups: waitlistCount,
-                });
-            } catch (error) {
-                if (error.name !== 'AbortError') {
-                    console.error("Failed to fetch overview stats:", error);
-                }
-            }
-        };
-
-        fetchOverviewStats();
-
         const unsubAdmins = onSnapshot(collection(db, "admins"), (snap) => {
             const adminSet = new Set(snap.docs.map(doc => doc.id));
             if (isMounted) setAdmins(adminSet);
@@ -115,11 +74,10 @@ const AdminPage: React.FC = () => {
 
         return () => {
             isMounted = false;
-            controller.abort();
             unsubAdmins();
             unsubSuperAdmins();
         };
-    }, []);
+    }, [projects, allUsers, proposals, waitlist]);
 
     const handleSearchChange = (tab: Tab, value: string) => {
         setSearchTerms(prev => ({ ...prev, [tab]: value }));
@@ -137,17 +95,26 @@ const AdminPage: React.FC = () => {
         
         let q;
         let orderField = 'name';
-        if (dataType === 'waitlist' || dataType === 'contacts') orderField = 'createdAt';
-        if (dataType === 'proposals') orderField = 'projectName';
-        if (dataType === 'users') orderField = 'walletAddress';
-        if (searchTerm && (dataType === 'waitlist' || dataType === 'contacts')) orderField = 'email';
+        let searchField = 'name_lowercase';
+        if (dataType === 'waitlist' || dataType === 'contacts') {
+            orderField = 'createdAt';
+            searchField = 'email';
+        }
+        if (dataType === 'proposals') {
+            orderField = 'projectName';
+            searchField = 'projectName'; // Proposals don't have a lowercase field yet
+        }
+        if (dataType === 'users') {
+            orderField = 'walletAddress';
+            searchField = 'username_lowercase';
+        }
 
         const orderDirection = (orderField === 'createdAt') ? 'desc' : 'asc';
 
         let baseQuery = query(collectionRef, orderBy(orderField, orderDirection));
 
         if (searchTerm) {
-            baseQuery = query(baseQuery, where(orderField, '>=', searchTerm), where(orderField, '<', searchTerm + ''));
+            baseQuery = query(baseQuery, where(searchField, '>=', searchTerm.toLowerCase()), where(searchField, '<', searchTerm.toLowerCase() + '\uf8ff'));
         }
 
         if (loadMore && lastDoc) {
@@ -234,6 +201,19 @@ const AdminPage: React.FC = () => {
         if (window.confirm("Are you sure you want to delete this user? This action is irreversible and will orphan their projects and comments.")) {
             await deleteDoc(doc(db, "users", walletAddress));
             addToast("User deleted successfully.", 'success');
+        }
+    };
+
+    const handleDeleteProject = async (projectId: string) => {
+        if (window.confirm('Are you sure you want to delete this project? This action is irreversible.')) {
+            await deleteDoc(doc(db, "projects", projectId));
+            // also delete reports for this project
+            const reportsQuery = query(collection(db, "reports"), where("reportedId", "==", projectId));
+            const reportsSnap = await getDocs(reportsQuery);
+            const batch = writeBatch(db);
+            reportsSnap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+            addToast("Project and associated reports deleted.", 'success');
         }
     };
     
@@ -348,6 +328,31 @@ const AdminPage: React.FC = () => {
                         {hasMore.contacts && <div className="mt-4 text-center"><Button onClick={() => fetchData('contacts', true)}>Load More</Button></div>}
                     </div>
                 );
+            case 'reports':
+                return (
+                    <div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm align-middle">
+                                <thead className="text-left"><tr className="border-b-2 border-brand-surface"><th className="p-2">Type</th><th className="p-2">Reported ID</th><th className="p-2">Reason</th><th className="p-2">Reporter</th><th className="p-2">Actions</th></tr></thead>
+                                <tbody>
+                                    {data.reports.map((r: any) => (
+                                        <tr key={r.id} className="border-b border-brand-surface">
+                                            <td className="p-2">{r.type}</td>
+                                            <td className="p-2 font-mono">{r.reportedId}</td>
+                                            <td className="p-2">{r.reason}</td>
+                                            <td className="p-2 font-mono">{r.reporterId}</td>
+                                            <td className="p-2">
+                                                {r.type === 'project' && <Button onClick={() => handleDeleteProject(r.reportedId)} variant="secondary" className="text-xs !px-2 !py-1 border-red-500 text-red-500">Delete Project</Button>}
+                                                {r.type === 'user' && <Button onClick={() => handleSuspendUser(r.reportedId, 'active')} variant="secondary" className="text-xs !px-2 !py-1 border-yellow-500 text-yellow-500">Suspend User</Button>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {hasMore.reports && <div className="mt-4 text-center"><Button onClick={() => fetchData('reports', true)}>Load More</Button></div>}
+                        </div>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -376,6 +381,7 @@ const AdminPage: React.FC = () => {
                 <TabButton tabName="proposals" label="Proposals" />
                 <TabButton tabName="waitlist" label="Waitlist" />
                 <TabButton tabName="contacts" label="Contacts" />
+                <TabButton tabName="reports" label="Reports" />
             </div>
             <div className="p-4 bg-brand-surface/60 rounded-xl min-h-[400px]">
                 {renderTabContent()}

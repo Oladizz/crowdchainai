@@ -2,3 +2,4 @@
 /* tslint:disable */
 /* eslint-disable */
 export { CrowdChain__factory } from "./CrowdChain__factory";
+export { CrowdChainAccessNFT__factory } from "./CrowdChainAccessNFT__factory";

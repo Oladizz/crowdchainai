@@ -16,6 +16,10 @@ const Header: React.FC = () => {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
 
+  if (!isLandingPage) {
+    return null;
+  }
+
   return (
     <header className="bg-white/60 dark:bg-brand-surface/60 backdrop-blur-lg sticky top-0 z-30 border-b border-gray-200 dark:border-white/10">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

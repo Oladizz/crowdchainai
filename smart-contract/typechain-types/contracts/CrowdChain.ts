@@ -23,14 +23,43 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace CrowdChain {
+  export type MilestoneStruct = {
+    description: string;
+    fundsRequired: BigNumberish;
+    state: BigNumberish;
+    yesVotes: BigNumberish;
+    noVotes: BigNumberish;
+  };
+
+  export type MilestoneStructOutput = [
+    description: string,
+    fundsRequired: bigint,
+    state: bigint,
+    yesVotes: bigint,
+    noVotes: bigint
+  ] & {
+    description: string;
+    fundsRequired: bigint;
+    state: bigint;
+    yesVotes: bigint;
+    noVotes: bigint;
+  };
+}
+
 export interface CrowdChainInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "MAX_DURATION"
+      | "VOTE_QUORUM_PERCENT"
+      | "accessNFT"
       | "checkFundingStatus"
       | "claimRefund"
       | "companyWallet"
       | "createProject"
       | "fundProject"
+      | "getMilestones"
+      | "marketplaceOperator"
       | "owner"
       | "pause"
       | "paused"
@@ -40,6 +69,7 @@ export interface CrowdChainInterface extends Interface {
       | "releaseMilestoneFunds"
       | "renounceOwnership"
       | "setCompanyWallet"
+      | "submitMilestoneForReview"
       | "transferOwnership"
       | "transferProjectOwnership"
       | "unpause"
@@ -58,6 +88,15 @@ export interface CrowdChainInterface extends Interface {
       | "Unpaused"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "MAX_DURATION",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "VOTE_QUORUM_PERCENT",
+    values?: undefined
+  ): string;
+  encodeFunctionData(functionFragment: "accessNFT", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "checkFundingStatus",
     values: [BigNumberish]
@@ -84,6 +123,14 @@ export interface CrowdChainInterface extends Interface {
   encodeFunctionData(
     functionFragment: "fundProject",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getMilestones",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "marketplaceOperator",
+    values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(functionFragment: "pause", values?: undefined): string;
@@ -113,6 +160,10 @@ export interface CrowdChainInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "submitMilestoneForReview",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
@@ -123,9 +174,18 @@ export interface CrowdChainInterface extends Interface {
   encodeFunctionData(functionFragment: "unpause", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "voteOnMilestone",
-    values: [BigNumberish, BigNumberish]
+    values: [BigNumberish, BigNumberish, boolean]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "MAX_DURATION",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "VOTE_QUORUM_PERCENT",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "accessNFT", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "checkFundingStatus",
     data: BytesLike
@@ -144,6 +204,14 @@ export interface CrowdChainInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "fundProject",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getMilestones",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "marketplaceOperator",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
@@ -165,6 +233,10 @@ export interface CrowdChainInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setCompanyWallet",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "submitMilestoneForReview",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -370,6 +442,12 @@ export interface CrowdChain extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  MAX_DURATION: TypedContractMethod<[], [bigint], "view">;
+
+  VOTE_QUORUM_PERCENT: TypedContractMethod<[], [bigint], "view">;
+
+  accessNFT: TypedContractMethod<[], [string], "view">;
+
   checkFundingStatus: TypedContractMethod<
     [_projectId: BigNumberish],
     [void],
@@ -402,6 +480,14 @@ export interface CrowdChain extends BaseContract {
     [void],
     "payable"
   >;
+
+  getMilestones: TypedContractMethod<
+    [_projectId: BigNumberish],
+    [CrowdChain.MilestoneStructOutput[]],
+    "view"
+  >;
+
+  marketplaceOperator: TypedContractMethod<[], [string], "view">;
 
   owner: TypedContractMethod<[], [string], "view">;
 
@@ -448,6 +534,12 @@ export interface CrowdChain extends BaseContract {
     "nonpayable"
   >;
 
+  submitMilestoneForReview: TypedContractMethod<
+    [_projectId: BigNumberish, _milestoneIndex: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
     [void],
@@ -463,7 +555,7 @@ export interface CrowdChain extends BaseContract {
   unpause: TypedContractMethod<[], [void], "nonpayable">;
 
   voteOnMilestone: TypedContractMethod<
-    [_projectId: BigNumberish, _milestoneIndex: BigNumberish],
+    [_projectId: BigNumberish, _milestoneIndex: BigNumberish, vote: boolean],
     [void],
     "nonpayable"
   >;
@@ -472,6 +564,15 @@ export interface CrowdChain extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "MAX_DURATION"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "VOTE_QUORUM_PERCENT"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "accessNFT"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "checkFundingStatus"
   ): TypedContractMethod<[_projectId: BigNumberish], [void], "nonpayable">;
@@ -498,6 +599,16 @@ export interface CrowdChain extends BaseContract {
   getFunction(
     nameOrSignature: "fundProject"
   ): TypedContractMethod<[_projectId: BigNumberish], [void], "payable">;
+  getFunction(
+    nameOrSignature: "getMilestones"
+  ): TypedContractMethod<
+    [_projectId: BigNumberish],
+    [CrowdChain.MilestoneStructOutput[]],
+    "view"
+  >;
+  getFunction(
+    nameOrSignature: "marketplaceOperator"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "owner"
   ): TypedContractMethod<[], [string], "view">;
@@ -553,6 +664,13 @@ export interface CrowdChain extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "submitMilestoneForReview"
+  ): TypedContractMethod<
+    [_projectId: BigNumberish, _milestoneIndex: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
   getFunction(
@@ -568,7 +686,7 @@ export interface CrowdChain extends BaseContract {
   getFunction(
     nameOrSignature: "voteOnMilestone"
   ): TypedContractMethod<
-    [_projectId: BigNumberish, _milestoneIndex: BigNumberish],
+    [_projectId: BigNumberish, _milestoneIndex: BigNumberish, vote: boolean],
     [void],
     "nonpayable"
   >;

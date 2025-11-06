@@ -19,6 +19,8 @@ interface GeneratedProjectData {
     description: string;
     category: ProjectCategory;
     milestones: GeneratedMilestone[];
+    image: File | string;
+    durationDays: number;
 }
 
 const CreateProjectPage: React.FC = () => {
@@ -38,7 +40,8 @@ const CreateProjectPage: React.FC = () => {
     
     // AI Mode State
     const [prompt, setPrompt] = useState('');
-    const [generatedData, setGeneratedData] = useState<GeneratedProjectData | null>(null);
+    const [generatedData, setGeneratedData] = useState<Omit<GeneratedProjectData, 'image'> | null>(null);
+    const [aiImageFile, setAiImageFile] = useState<File | null>(null);
     
     // Manual Mode State
     const [manualData, setManualData] = useState<GeneratedProjectData>({
@@ -46,6 +49,8 @@ const CreateProjectPage: React.FC = () => {
         description: '',
         category: ProjectCategory.TECH,
         milestones: [{ title: '', description: '', fundsRequired: 0 }],
+        image: '',
+        durationDays: 30,
     });
 
     // Common State
@@ -74,6 +79,7 @@ const CreateProjectPage: React.FC = () => {
                     name: { type: Type.STRING, description: 'A creative and concise name for the project.' },
                     description: { type: Type.STRING, description: 'A compelling, detailed description of the project (2-3 sentences).' },
                     category: { type: Type.STRING, enum: Object.values(ProjectCategory), description: 'The most appropriate category for the project.' },
+                    durationDays: { type: Type.INTEGER, description: 'The campaign duration in days (1-90).' },
                     milestones: {
                         type: Type.ARRAY,
                         description: 'A list of 3-4 logical milestones to complete the project.',
@@ -88,7 +94,7 @@ const CreateProjectPage: React.FC = () => {
                         }
                     }
                 },
-                required: ['name', 'description', 'category', 'milestones']
+                required: ['name', 'description', 'category', 'milestones', 'durationDays']
             };
             const fullPrompt = `You are a creative project manager for a decentralized crowdfunding platform. Based on the user's idea, generate a complete project plan... User Idea: "${prompt}"... Respond ONLY with the JSON object.`;
             const response = await ai.models.generateContent({
@@ -117,8 +123,8 @@ const CreateProjectPage: React.FC = () => {
         }
         // Basic validation for manual data
         if (mode === 'manual') {
-            if (!data.name || !data.description || data.milestones.some(m => !m.title || m.fundsRequired <= 0)) {
-                setError("Please fill all required fields. Milestones must have a title and require more than $0 in funding.");
+            if (!data.name || !data.description || !data.image || !data.durationDays || data.durationDays <= 0 || data.milestones.some(m => !m.title || m.fundsRequired <= 0)) {
+                setError("Please fill all required fields, including the project image and a valid duration. Milestones must have a title and require more than $0 in funding.");
                 return;
             }
         }
@@ -126,6 +132,12 @@ const CreateProjectPage: React.FC = () => {
         setSubmitted(true);
     };
     
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setManualData(prev => ({ ...prev, image: e.target.files[0] }));
+        }
+    };
+
     const handleManualChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setManualData(prev => ({ ...prev, [name]: value }));
@@ -235,6 +247,10 @@ const CreateProjectPage: React.FC = () => {
                             <input type="text" name="name" id="name" value={manualData.name} onChange={handleManualChange} className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white" required />
                          </div>
                          <div>
+                            <label htmlFor="image" className="block text-sm font-medium text-brand-muted mb-1">Project Image</label>
+                            <input type="file" name="image" id="image" onChange={handleFileChange} className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white" required />
+                         </div>
+                         <div>
                             <label htmlFor="description" className="block text-sm font-medium text-brand-muted mb-1">Description</label>
                             <textarea name="description" id="description" value={manualData.description} onChange={handleManualChange} rows={4} className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white" required />
                          </div>
@@ -243,6 +259,11 @@ const CreateProjectPage: React.FC = () => {
                             <select name="category" id="category" value={manualData.category} onChange={handleManualChange} className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white">
                                 {Object.values(ProjectCategory).map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             </select>
+                         </div>
+                         <div>
+                            <label htmlFor="durationDays" className="block text-sm font-medium text-brand-muted mb-1">Campaign Duration (in days)</label>
+                            <input type="number" name="durationDays" id="durationDays" value={manualData.durationDays} onChange={handleManualChange} min="1" max="90" className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white" required />
+                            <p className="text-xs text-brand-muted mt-1">Max 90 days, as per contract rules.</p>
                          </div>
                     </div>
                     <div className="bg-brand-surface/60 backdrop-blur-lg border border-white/10 p-4 sm:p-6 rounded-xl space-y-4">
@@ -294,6 +315,10 @@ const CreateProjectPage: React.FC = () => {
                             <p className="mt-1 text-white break-words">{generatedData.category}</p>
                         </div>
                         <div>
+                            <p className="text-sm font-medium text-brand-muted">Campaign Duration</p>
+                            <p className="mt-1 text-white break-words">{generatedData.durationDays} days</p>
+                        </div>
+                        <div>
                             <p className="text-sm font-medium text-brand-muted">Description</p>
                             <p className="mt-1 text-brand-muted break-words">{generatedData.description}</p>
                         </div>
@@ -310,11 +335,15 @@ const CreateProjectPage: React.FC = () => {
                         </div>
                          <p className="text-right font-bold text-white">Total Funding Goal: ${generatedData.milestones.reduce((sum, m) => sum + m.fundsRequired, 0).toLocaleString()}</p>
                     </div>
+                    <div className="bg-brand-surface/60 backdrop-blur-lg border border-white/10 p-4 sm:p-6 rounded-xl space-y-4">
+                        <h3 className="text-lg font-semibold text-white">Upload Project Image</h3>
+                        <input type="file" name="image" id="ai-image" onChange={(e) => setAiImageFile(e.target.files ? e.target.files[0] : null)} className="w-full bg-brand-bg border border-brand-surface focus:border-brand-blue focus:ring-brand-blue rounded-md p-2 text-white" required />
+                    </div>
                     <div className="flex justify-end space-x-4">
                         <Button variant="secondary" onClick={handleGenerate} disabled={isLoading}>
                             {isLoading ? <Spinner className="mr-2" /> : 'Regenerate'}
                         </Button>
-                        <Button variant="primary" onClick={() => handleSubmit(generatedData)} disabled={isLoading || !user}>Submit to DAO</Button>
+                        <Button variant="primary" onClick={() => handleSubmit({ ...generatedData, image: aiImageFile })} disabled={isLoading || !user || !aiImageFile}>Submit to DAO</Button>
                     </div>
                 </div>
             )}

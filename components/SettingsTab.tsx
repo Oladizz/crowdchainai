@@ -9,7 +9,7 @@ const UserCircleIcon: React.FC<{className?: string}> = ({ className }) => (
 );
 
 const SettingsTab: React.FC = () => {
-    const { user, theme, toggleTheme, logout, updateUserProfile, updateUserRole } = useAppContext();
+    const { user, theme, toggleTheme, logout, updateUserProfile, updateUserRole, mintPremiumNFT } = useAppContext();
     const [username, setUsername] = useState('');
     const [avatar, setAvatar] = useState('');
     const [bio, setBio] = useState('');
@@ -91,6 +91,18 @@ const SettingsTab: React.FC = () => {
                     <div className="mt-4 text-right">
                         <Button variant="secondary" onClick={handleRoleChange} className="border-yellow-500 text-yellow-500 hover:bg-yellow-500 hover:text-white hover:border-yellow-500">
                             Switch to Investor Role
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {user && user.role !== 'premium' && (
+                <div className="p-6 bg-brand-surface/60 backdrop-blur-lg border border-white/10 rounded-xl shadow-lg">
+                    <h3 className="font-medium text-white">Become a Premium User</h3>
+                    <p className="text-sm text-brand-muted mt-1">Mint a Premium NFT to get exclusive benefits and a higher voting power in the DAO.</p>
+                    <div className="mt-4 text-right">
+                        <Button variant="primary" onClick={mintPremiumNFT}>
+                            Mint Premium NFT
                         </Button>
                     </div>
                 </div>

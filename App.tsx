@@ -27,6 +27,7 @@ import LoginModal from './components/LoginModal';
 import GetStartedModal from './components/GetStartedModal';
 import AiChatbot from './components/AiChatbot';
 import LandingRedirect from './components/LandingRedirect';
+import BugReportPage from './pages/BugReportPage';
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const location = useLocation();
@@ -123,6 +124,7 @@ const App: React.FC = () => {
                                             <Route path="/about" element={<AboutPage />} />
                                             <Route path="/contact" element={<ContactPage />} />
                                             <Route path="/waitlist" element={<WaitlistPage />} />
+                                            <Route path="/report-bug" element={<BugReportPage />} />
                                             <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
                                             {/* <Route path="/ai-tools" element={<AiToolsPage />} /> */}
                                             <Route path="/profile/:walletAddress" element={<PublicProfilePage />} />

@@ -10,6 +10,7 @@ import AiInsightsCard from '../components/AiInsightsCard';
 import Spinner from '../components/Spinner';
 import { GoogleGenAI, Modality } from '@google/genai';
 import { decode, decodeAudioData } from '../utils/audio';
+import ReportModal from '../components/ReportModal';
 
 const CheckCircleIcon: React.FC = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -58,8 +59,9 @@ const MilestoneStatusIcon: React.FC<{ status: Milestone['status'] }> = ({ status
 
 const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { projects, user, fundProject, addToast, truncateAddress } = useAppContext();
+  const { projects, user, fundProject, addToast, truncateAddress, reportItem } = useAppContext();
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [fundAmount, setFundAmount] = useState('');
   const [summary, setSummary] = useState('');
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -88,6 +90,17 @@ const ProjectDetailPage: React.FC = () => {
     } else {
       addToast('Please enter a valid amount.', 'error');
     }
+  };
+
+  const handleReportProject = (reason: string) => {
+    if (!user || !project) return;
+    reportItem({
+        type: 'project',
+        reportedId: project.id,
+        reporterId: user.walletAddress,
+        reason,
+    });
+    setIsReportModalOpen(false);
   };
 
   const handleGenerateSummary = async () => {
@@ -245,21 +258,26 @@ const ProjectDetailPage: React.FC = () => {
                 </div>
             </div>
             {project.daoStatus === 'Pending' && <p className="mt-4 text-center text-xs sm:text-sm bg-yellow-900 text-yellow-300 p-2 rounded-md">Project is under DAO review.</p>}
-            <Button 
-              data-guide="fund-button"
-              variant="primary" 
-              className="w-full mt-6 text-sm sm:text-base"
-              onClick={() => setIsFundingModalOpen(true)}
-              disabled={!user || project.daoStatus !== 'Approved' || daysLeft <= 0}
-            >
-              {daysLeft > 0 ? 'Fund this Project' : 'Funding Ended'}
-            </Button>
+            {user && user.role === 'investor' && (
+              <Button 
+                data-guide="fund-button"
+                variant="primary" 
+                className="w-full mt-6 text-sm sm:text-base"
+                onClick={() => setIsFundingModalOpen(true)}
+                disabled={project.daoStatus !== 'Approved' || daysLeft <= 0}
+              >
+                {daysLeft > 0 ? 'Fund this Project' : 'Funding Ended'}
+              </Button>
+            )}
           </div>
           
           <AiInsightsCard project={project} />
 
           <div className="bg-gray-100 dark:bg-brand-surface/60 backdrop-blur-lg dark:border dark:border-white/10 rounded-xl p-4 sm:p-5">
-            <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">About the Creator</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-4">About the Creator</h3>
+              {user && user.walletAddress !== project.creatorWallet && <Button variant="secondary" className="text-xs" onClick={() => setIsReportModalOpen(true)}>Report</Button>}
+            </div>
             <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">
                     <UserCircleIcon />
@@ -325,6 +343,13 @@ const ProjectDetailPage: React.FC = () => {
             </div>
         </form>
       </Modal>
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onSubmit={handleReportProject}
+        title={`Report "${project.name}"`}
+      />
     </>
   );
 };
