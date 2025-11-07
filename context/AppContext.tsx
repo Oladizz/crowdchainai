@@ -761,7 +761,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  const reportItem = async (report: Omit<Report, 'id' | 'timestamp'>) => {
     try {
+        await addDoc(collection(db, "reports"), {
+            ...report,
+            timestamp: serverTimestamp()
+        });
+        addToast('Report submitted successfully.', 'success');
+    } catch (e) {
         console.error("Error submitting report: ", e);
         addToast('Failed to submit report.', 'error');
     }
