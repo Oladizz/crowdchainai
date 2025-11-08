@@ -83,7 +83,7 @@ const AdminPage: React.FC = () => {
         setSearchTerms(prev => ({ ...prev, [tab]: value }));
     };
 
-    const fetchData = useCallback(async (dataType: Tab, loadMore = false, signal: AbortSignal) => {
+    const fetchData = useCallback(async (dataType: Tab, loadMore = false, signal?: AbortSignal) => {
         if (dataType === 'overview') return;
         if (!loadMore) {
             setHasMore(prev => ({ ...prev, [dataType]: true }));
@@ -125,7 +125,7 @@ const AdminPage: React.FC = () => {
 
         try {
             const snap = await getDocs(q);
-            if (signal.aborted) return;
+            if (signal?.aborted) return;
 
             const newData = snap.docs.map(d => ({ ...d.data(), id: d.id, walletAddress: d.id }));
 

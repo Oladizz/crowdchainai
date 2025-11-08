@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import Button from './Button';
+import { uploadImageToCloudflare } from '../utils/imageUpload';
 
 const UserCircleIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-24 w-24 text-brand-muted"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -8,10 +9,17 @@ const UserCircleIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const VerifiedIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className || "w-5 h-5 text-blue-500"}>
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    </svg>
+);
+
 const SettingsTab: React.FC = () => {
-    const { user, theme, toggleTheme, logout, updateUserProfile, updateUserRole, mintPremiumNFT } = useAppContext();
+    const { user, addToast, theme, toggleTheme, logout, updateUserProfile, updateUserRole, mintPremiumNFT } = useAppContext();
     const [username, setUsername] = useState('');
     const [avatar, setAvatar] = useState('');
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [bio, setBio] = useState('');
     const [twitter, setTwitter] = useState('');
     const [website, setWebsite] = useState('');
@@ -26,9 +34,22 @@ const SettingsTab: React.FC = () => {
         }
     }, [user]);
 
-    const handleProfileSave = (e: React.FormEvent) => {
+    const handleProfileSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        updateUserProfile({ username, avatar, bio, twitter, website });
+        let newAvatarUrl = avatar;
+        if (avatarFile) {
+            addToast('Uploading new profile picture...', 'info');
+            try {
+                newAvatarUrl = await uploadImageToCloudflare(avatarFile);
+                setAvatar(newAvatarUrl);
+                setAvatarFile(null);
+            } catch (error) {
+                console.error(error);
+                addToast('Failed to upload profile picture.', 'error');
+                return;
+            }
+        }
+        updateUserProfile({ username, avatar: newAvatarUrl, bio, twitter, website });
     };
 
     const handleStartTour = () => {
@@ -41,8 +62,44 @@ const SettingsTab: React.FC = () => {
         }
     }
 
+    const testWorker = async () => {
+        const WORKER_URL = "https://crowdchain-image-uploader.rabiuoladizz.workers.dev";
+        try {
+            const res = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filename: 'test.jpg', contentType: 'image/jpeg' })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                alert('Worker test successful! Response: ' + JSON.stringify(data));
+            } else {
+                const err = await res.text();
+                alert('Worker test failed! Response: ' + err);
+            }
+        } catch (e) {
+            alert('Worker test failed! Caught error: ' + e.toString());
+        }
+    }
+
     return (
         <div className="space-y-8 animate-fade-in max-w-2xl mx-auto">
+            {user && user.isSuperAdmin && (
+                <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl shadow-lg">
+                    <h3 className="font-medium text-white flex items-center gap-2">
+                        Superadmin Controls <VerifiedIcon className="w-5 h-5 text-blue-400" />
+                    </h3>
+                    <p className="text-sm text-brand-muted mt-1">Switch your active role. Current role: <span className="font-bold text-white">{user.role}</span></p>
+                    <div className="mt-4 flex gap-4">
+                        <Button variant={user.role === 'creator' ? 'primary' : 'secondary'} onClick={() => updateUserRole(user.walletAddress, 'creator')}>
+                            Switch to Creator
+                        </Button>
+                        <Button variant={user.role === 'investor' ? 'primary' : 'secondary'} onClick={() => updateUserRole(user.walletAddress, 'investor')}>
+                            Switch to Investor
+                        </Button>
+                    </div>
+                </div>
+            )}
             {/* Profile Settings */}
             <form onSubmit={handleProfileSave} className="p-6 bg-brand-surface/60 backdrop-blur-lg border border-white/10 rounded-xl space-y-4 shadow-lg">
                 <h2 className="text-xl font-semibold text-center text-white mb-4">Profile Settings</h2>
@@ -61,8 +118,8 @@ const SettingsTab: React.FC = () => {
                         <input type="text" id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="mt-1 w-full bg-brand-bg border border-brand-surface focus:border-brand-blue rounded-md p-2 text-white" placeholder="Your public display name" />
                     </div>
                     <div>
-                        <label htmlFor="avatar" className="block text-sm font-medium text-brand-muted">Avatar URL</label>
-                        <input type="url" id="avatar" value={avatar} onChange={(e) => setAvatar(e.target.value)} className="mt-1 w-full bg-brand-bg border border-brand-surface focus:border-brand-blue rounded-md p-2 text-white" placeholder="https://example.com/image.png" />
+                        <label htmlFor="avatar" className="block text-sm font-medium text-brand-muted">Avatar Image</label>
+                        <input type="file" id="avatar" accept="image/*" onChange={(e) => setAvatarFile(e.target.files ? e.target.files[0] : null)} className="mt-1 w-full bg-brand-bg border border-brand-surface focus:border-brand-blue rounded-md p-2 text-white" />
                     </div>
                 </div>
                 <div>
@@ -96,7 +153,13 @@ const SettingsTab: React.FC = () => {
                 </div>
             )}
 
-            {user && user.role !== 'premium' && (
+            {user && user.role === 'premium' && (
+                <div className="p-6 bg-yellow-400/10 border border-yellow-400/30 rounded-xl shadow-lg text-center">
+                    <h3 className="font-bold text-yellow-300">Premium Member</h3>
+                    <p className="text-sm text-yellow-400/80 mt-1">You have exclusive benefits and higher voting power.</p>
+                </div>
+            )}
+            {user && user.role === 'creator' && (
                 <div className="p-6 bg-brand-surface/60 backdrop-blur-lg border border-white/10 rounded-xl shadow-lg">
                     <h3 className="font-medium text-white">Become a Premium User</h3>
                     <p className="text-sm text-brand-muted mt-1">Mint a Premium NFT to get exclusive benefits and a higher voting power in the DAO.</p>
@@ -111,7 +174,8 @@ const SettingsTab: React.FC = () => {
             {/* Application Settings */}
             <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-center text-white">Application Settings</h2>
-                
+
+
                 <div className="p-6 bg-brand-surface/60 backdrop-blur-lg border border-white/10 rounded-xl shadow-lg flex justify-between items-center">
                     <div className="min-w-0 mr-4">
                         <h3 className="font-medium text-white">Theme</h3>
@@ -148,5 +212,4 @@ const SettingsTab: React.FC = () => {
         </div>
     );
 };
-
 export default SettingsTab;

@@ -68,7 +68,7 @@ const Sidebar: React.FC = () => {
                 <NavItem to="/explore" label="Explore" icon={CompassIcon} />
                 <NavItem to="/dao" label="DAO Governance" icon={DaoIcon} />
                 {user && <NavItem to="/dashboard" label="Dashboard" icon={UserIcon} />}
-                {user && user.role === 'admin' && <NavItem to="/admin" label="Admin Panel" icon={ShieldCheckIcon} />}
+                {user && (user.role === 'admin' || user.isSuperAdmin) && <NavItem to="/admin" label="Admin Panel" icon={ShieldCheckIcon} />}
             </nav>
             {user && (
                 <div className="mt-auto p-2 bg-brand-bg/80 rounded-lg border border-white/10">

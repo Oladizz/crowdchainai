@@ -1,11 +1,14 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Project, Proposal, User, ProjectCategory, Milestone, WaitlistEntry, ContactMessage, Report } from './types';
-import { db } from '../services/firebase';
-import { collection, onSnapshot, doc, updateDoc, addDoc, increment, getDoc, setDoc, runTransaction, arrayUnion, serverTimestamp, query, orderBy, writeBatch, deleteDoc } from "firebase/firestore";
+import { db, storage } from '../services/firebase';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, onSnapshot, doc, updateDoc, addDoc, increment, getDoc, setDoc, runTransaction, arrayUnion, serverTimestamp, query, orderBy, writeBatch, deleteDoc, getDocs } from "firebase/firestore";
 import { ethers } from "ethers";
 import CrowdChainABI from "../smart-contract/artifacts/contracts/CrowdChain.sol/CrowdChain.json";
 
 import CrowdChainAccessNFT from "../smart-contract/artifacts/contracts/CrowdChainAccessNFT.sol/CrowdChainAccessNFT.json";
+
+import { uploadImageToCloudflare } from '../utils/imageUpload';
 
 const CROWDCHAIN_CONTRACT_ADDRESS = "0x256c0D29b78203987319DB31a3e306Ed8928bb48";
 
@@ -259,43 +262,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const userRef = doc(db, "users", walletAddress);
       const userSnap = await getDoc(userRef);
 
-      const adminRef = doc(db, "admins", walletAddress);
-      const adminSnap = await getDoc(adminRef);
       const superAdminRef = doc(db, "superAdmins", walletAddress);
       const superAdminSnap = await getDoc(superAdminRef);
+      const isSuperAdmin = superAdminSnap.exists();
 
-      const isAdmin = ADMIN_WALLETS.map(a => a.toLowerCase()).includes(walletAddress) || adminSnap.exists() || superAdminSnap.exists();
+      const adminRef = doc(db, "admins", walletAddress);
+      const adminSnap = await getDoc(adminRef);
+      const isAdmin = !isSuperAdmin && (ADMIN_WALLETS.map(a => a.toLowerCase()).includes(walletAddress) || adminSnap.exists());
 
-      if (userSnap.exists()) {
-          const userData = userSnap.data();
-          const updatedUser: User = {
-              walletAddress,
-              ...userData,
-              role: isAdmin ? 'admin' : (userData.role || 'investor'),
-              status: userData.status || 'Active',
-          };
-          setUser(updatedUser);
-          await setDoc(userRef, updatedUser, { merge: true });
-      } else {
-          const newUser: User = {
-              walletAddress,
-              username: '',
-              username_lowercase: '',
-              avatar: '',
-              bio: '',
-              twitter: '',
-              website: '',
-              status: 'Active',
-              createdProjectIds: [],
-              fundedProjects: [],
-              role: isAdmin ? 'admin' : 'investor',
-          };
-          await setDoc(userRef, newUser);
-          setUser(newUser);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      let role = userData.role || 'investor';
+
+      if (isAdmin) {
+        role = 'admin';
       }
+
+      const userToSet: User = {
+        walletAddress,
+        username: userData.username || '',
+        username_lowercase: userData.username_lowercase || '',
+        avatar: userData.avatar || '',
+        bio: userData.bio || '',
+        twitter: userData.twitter || '',
+        website: userData.website || '',
+        status: userData.status || 'Active',
+        createdProjectIds: userData.createdProjectIds || [],
+        fundedProjects: userData.fundedProjects || [],
+        role: role,
+        isSuperAdmin: isSuperAdmin,
+      };
+
+      await setDoc(userRef, userToSet, { merge: true });
+      setUser(userToSet);
       
       localStorage.setItem('walletAddress', walletAddress);
-      addToast(isAdmin ? 'Admin wallet connected!' : 'Wallet connected!', 'success');
+      addToast(isSuperAdmin ? 'Superadmin wallet connected!' : isAdmin ? 'Admin wallet connected!' : 'Wallet connected!', 'success');
       getAllUsers();
 
     } catch (error: any) {
@@ -534,12 +535,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let imageUrl = '';
         if (typeof projectData.image === 'string') {
             imageUrl = projectData.image;
+        } else if (projectData.image instanceof File) {
+            addToast('Uploading image...', 'info');
+            imageUrl = await uploadImageToCloudflare(projectData.image);
         } else {
-            const storage = getStorage();
-            const imageRef = ref(storage, `project-images/${projectData.image.name}-${Date.now()}`);
-            const snapshot = await uploadBytes(imageRef, projectData.image);
-            imageUrl = await getDownloadURL(snapshot.ref);
+            throw new Error("Invalid image data provided.");
         }
+
 
         const fundingGoal = projectData.milestones.reduce((sum, m) => sum + m.fundsRequired, 0);
         const milestoneDescriptions = projectData.milestones.map(m => m.description);
@@ -790,6 +792,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const mintPremiumNFT = async () => {
     if (!user) return;
+    if (user.role !== "creator") {
+      addToast("Only creators can become premium members.", "error");
+      return;
+    }
     if (!crowdChainContract) {
         addToast("Blockchain contract not loaded.", 'error');
         return;
@@ -809,7 +815,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addToast('Congratulations! You are now a Premium User.', 'success');
     } catch (e: any) {
         console.error("Error minting premium NFT: ", e);
-        if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
+        if (e.reason?.includes("Premium NFT already owned")) {
+            addToast("You are already a premium user.", "info");
+            if (user && user.role !== "premium") {
+                const userRef = doc(db, "users", user.walletAddress.toLowerCase());
+                await updateDoc(userRef, { role: "premium" });
+                setUser({ ...user, role: "premium" });
+            }
+        } else if (e.code === 'ACTION_REJECTED' || e.code === 4001) {
             addToast('Transaction rejected in wallet.', 'error');
         } else if (e.code === 'INSUFFICIENT_FUNDS') {
             addToast('Insufficient funds to mint the Premium NFT.', 'error');

@@ -241,7 +241,7 @@ const ProjectDetailPage: React.FC = () => {
 
         {/* Right Column (Stats & Milestones) */}
         <div className="mt-8 lg:mt-0 space-y-4 sm:space-y-6">
-          <div data-guide="project-funding" className="bg-gray-100 dark:bg-brand-surface/60 backdrop-blur-lg dark:border dark:border-white/10 rounded-xl p-4 sm:p-5 sticky top-24">
+          <div data-guide="project-funding" className="bg-gray-100 dark:bg-brand-surface/60 backdrop-blur-lg dark:border dark:border-white/10 rounded-xl p-4 sm:p-5">
             <ProgressBar value={project.amountRaised} max={project.fundingGoal} />
             <div className="mt-4">
               <p className="text-xl sm:text-2xl font-bold text-brand-blue-light break-words">${project.amountRaised.toLocaleString()}</p>

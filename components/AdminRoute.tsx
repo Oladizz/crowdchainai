@@ -18,7 +18,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
         );
     }
 
-    if (!user || user.role !== 'admin') {
+    if (!user || (user.role !== 'admin' && !user.isSuperAdmin)) {
         // No need for a toast here, as it might show up unnecessarily on page load for non-admins.
         // The redirect is sufficient.
         return <Navigate to="/" replace />;

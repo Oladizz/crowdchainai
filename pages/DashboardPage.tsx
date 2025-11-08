@@ -14,6 +14,12 @@ const UserIcon: React.FC<{className?: string}> = ({className}) => (
     </svg>
 );
 
+const VerifiedIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className || "w-5 h-5 text-blue-500"}>
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    </svg>
+);
+
 const DashboardPage: React.FC = () => {
     const { user, login } = useAppContext();
     const [activeTab, setActiveTab] = useState<Tab>(user?.role === 'creator' ? 'projects' : 'investments');
@@ -58,8 +64,13 @@ const DashboardPage: React.FC = () => {
         <div className="space-y-8">
             <div data-guide="dashboard-welcome" className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words">Welcome, {user.username || (isCreator ? 'Creator' : 'Investor')}</h1>
-                    <p className="text-brand-muted mt-1 font-mono text-sm break-words">{user.walletAddress}</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white break-words flex items-center gap-2">
+                        Welcome, {user.username || (isCreator ? 'Creator' : 'Investor')}
+                        {user.isSuperAdmin && <VerifiedIcon className="w-6 h-6 text-blue-400" />}
+                        {user.role === 'premium' && (
+                            <span className="text-xs bg-yellow-400/80 text-yellow-900 font-bold px-2 py-1 rounded-full">PREMIUM</span>
+                        )}
+                    </h1>                    <p className="text-brand-muted mt-1 font-mono text-sm break-words">{user.walletAddress}</p>
                 </div>
                  {user.avatar ? (
                     <img src={user.avatar} alt="User Avatar" className="w-16 h-16 rounded-full object-cover bg-brand-surface self-start sm:self-center flex-shrink-0 border-2 border-brand-surface" />

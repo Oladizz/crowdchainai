@@ -57,6 +57,7 @@ export interface User {
   createdProjectIds: string[];
   fundedProjects: { projectId: string; amount: number }[];
   role?: 'creator' | 'investor' | 'admin' | 'premium';
+  isSuperAdmin?: boolean;
 }
 
 export interface WaitlistEntry {

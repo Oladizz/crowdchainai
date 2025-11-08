@@ -17,6 +17,12 @@ const UserCircleIcon: React.FC<{className?: string}> = ({ className }) => (
     </svg>
 );
 
+const VerifiedIcon: React.FC<{className?: string}> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className || "w-5 h-5 text-blue-500"}>
+        <path fillRule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+    </svg>
+);
+
 const CopyIcon: React.FC<{className?: string}> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className || "h-4 w-4"} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -97,7 +103,13 @@ const PublicProfilePage: React.FC = () => {
                         </div>
                     )}
                     <div className="text-center sm:text-left min-w-0 flex-1 overflow-hidden">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">{username}</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-white truncate flex items-center justify-center sm:justify-start gap-2">
+                            {username}
+                            {profileData?.isSuperAdmin && <VerifiedIcon className="w-6 h-6 text-blue-400" />}
+                            {profileData?.role === 'premium' && (
+                                <span className="text-xs bg-yellow-400/80 text-yellow-900 font-bold px-2 py-1 rounded-full">PREMIUM</span>
+                            )}
+                        </h1>
                         <button 
                             onClick={handleCopyAddress} 
                             className="group inline-flex items-center justify-center sm:justify-start gap-2 mt-1 text-brand-muted hover:text-white transition-colors focus:outline-none" 
